@@ -1,0 +1,24 @@
+───────────────────────────────────────────────────────── Held-out test · database longview_holdout · scenario D ─────────────────────────────────────────────────────────
+North: a one-week promo (week 1) ends in week 2, so revenue dips (misleading first guess). Distribution falls ~10% in week 3 and again in week 4, then stays down (true 
+cause). Price flat.
+Synced 11 playbook versions from longview (holdout-only versions kept).
+Inserted 72 documents into longview_holdout.weekly_sales (scenario D)
+
+Revenue by region and week
+Region         Wk 1       Wk 2       Wk 3       Wk 4       Wk 5       Wk 6    Wk1→6
+-----------------------------------------------------------------------------------
+North        66,420     57,666     51,476     46,249     46,634     46,654     -30%
+South        57,839     57,549     58,133     58,198     57,278     57,028      -1%
+East         58,159     57,220     58,418     57,234     57,773     57,086      -2%
+West         58,933     57,535     57,201     57,733     57,761     58,127      -1%
+  v2 run 1: score 30.0  found False  confident wk None  {'true_cause_found': 0, 'timeliness': 0.0, 'no_wrong_active': 10, 'no_non_causal': 10, 'no_duplicates': 10}  6 
+calls · runs/run_20261011_214100.txt
+  v2 run 2: score 90.0  found True  confident wk 4  {'true_cause_found': 35, 'timeliness': 25.0, 'no_wrong_active': 10, 'no_non_causal': 10, 'no_duplicates': 10}  8 calls
+· runs/run_20261011_214114.txt
+Scenario D (held out) · 2 runs per version                             
+┏━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Version ┃ Author ┃ Mean score ┃ Runs       ┃ found_true_cause (x/2) ┃
+┡━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━┩
+│      v2 │ human  │       60.0 │ 30.0, 90.0 │                    1/2 │
+└─────────┴────────┴────────────┴────────────┴────────────────────────┘
+LLM usage: 14 calls · tokens in 13,610 / out 2,396

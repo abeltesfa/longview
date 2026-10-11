@@ -127,7 +127,7 @@ Playbooks were learned and tuned on scenario A only. To check whether they carry
 | v2 | human | 100.0 | **91.7** | 4/4 |
 | v10 | agent | 100.0 | 87.5 | 4/4 |
 
-**On B and C, the agent-written v10 did no better than the human v2, and slightly worse on C. On D, the hardest test, every playbook mostly failed; v11, the version trained on C, was the only one that found the cause, in 1 of 2 runs.**
+**On B and C, the agent-written v10 did no better than the human v2, and slightly worse on C. On D, the hardest test, every playbook mostly failed: v11 (trained on C) and the human v2 each found the cause in 1 of 2 runs; v10 and v0 never did.**
 
 ### Scenario B: promo ends
 
@@ -197,10 +197,11 @@ Its diagnosis matches what I found in the logs by hand: it had reinforced distri
 | Version | Author | Mean score | Runs | found_true_cause |
 |---|---|---:|---|---:|
 | v0 | human (blank) | 7.5 | 10.0, 5.0 | 0/2 |
+| v2 | human | 60.0 | 30.0, 90.0 | 1/2 |
 | v10 | agent | 35.0 | 40.0, 30.0 | 0/2 |
 | v11 | agent (v10 + lessons from C) | **70.0** | 40.0, 100.0 | **1/2** |
 
-*44 LLM calls (budget 50). Output: `notes/holdout_scenario_d.txt`.*
+*44 LLM calls for v0/v10/v11 (budget 50), plus 14 for v2, run afterwards. Output: `notes/holdout_scenario_d.txt`, `notes/holdout_scenario_d_v2.txt`.*
 
 **What happened (from the run logs):**
 
@@ -211,6 +212,8 @@ Its diagnosis matches what I found in the logs by hand: it had reinforced distri
 | v11 #1 | week 4 | distribution at 0.60, never confirmed |
 | v11 #2 | **week 3** | reinforced to 0.75 in week 4 → found |
 | v0 #1, #2 | week 4 | distribution at 0.60, plus wrong beliefs (units, promo) left active at 0.90–0.95 |
+| v2 #1 | never | promo belief active at 0.95 (wrong) |
+| v2 #2 | kept alive from week 2 | gave the distribution hypothesis NO_CHANGE in week 2 instead of contradicting it, then reinforced it to 0.80 by week 4 → found; the wrong promo belief also stayed active at 0.95 |
 
 - **The same failure as scenario C, now costly.** Every playbook kept the promo explanation through week 3, because the promo was still "off" compared with week 1, even though distribution had started falling. In C, switching late only cost timeliness. In D the decline stops after week 4, so a week-4 switch never gets confirmed and scores as not found.
 - **v11's lesson from C partly carried over.** In one run it applied its new "check every lever each week" rule and switched in week 3. In the other it didn't. One success in two runs isn't a reliable improvement.

@@ -1,0 +1,99 @@
+Run started 2026-10-11 21:41:00 UTC, playbook v2 (human)
+Memory reset.
+
+======================================================================
+WEEK 2
+======================================================================
+  East   revenue     57,220  (-1.6% WoW)
+  North  revenue     57,666  (-13.2% WoW)
+  South  revenue     57,549  (-0.5% WoW)
+  West   revenue     57,535  (-2.4% WoW)
+
+--- FLAGGED: North revenue -13.2% WoW ---
+  No active beliefs; asking LLM for hypotheses:
+    + [avg_price] Average price rose, dampening demand in North.  (conf 0.5)
+    + [distribution_points] Lost distribution points reduced product availability in North.  (conf 0.5)
+    + [promo_active] Promotions ended, removing the week-1 demand lift.  (conf 0.5)
+
+  Belief: "Average price rose, dampening demand in North."  (conf 0.50)
+    data checked [avg_price]: wk1=2.85  wk2=2.82
+    revenue for context:  wk1=66,419.51  wk2=57,665.6
+    → CONTRADICT (replacement already covered by an active belief)  conf 0.50 → 0.10
+      reason: avg_price fell from 2.85 to 2.82 (about -1%), so it is not above its week-1 baseline and cannot explain the 13.2% revenue drop. Promo_active went from true in week 1 to false in week 2, a better explanation, since the promotion ending would cut volume. Distribution points were nearly flat (955 to 949).
+
+  Belief: "Lost distribution points reduced product availability in North."  (conf 0.50)
+    data checked [distribution_points]: wk1=955  wk2=949
+    revenue for context:  wk1=66,419.51  wk2=57,665.6
+    → CONTRADICT (replacement already covered by an active belief)  conf 0.50 → 0.10
+      reason: Distribution points barely moved (955 to 949, about -0.6%), so they cannot explain the 13% revenue drop (66,420 to 57,666). Promo_active switched from true to false, which is a much better explanation for the decline.
+
+  Belief: "Promotions ended, removing the week-1 demand lift."  (conf 0.50)
+    data checked [promo_active]: wk1=yes  wk2=no
+    revenue for context:  wk1=66,419.51  wk2=57,665.6
+    → REINFORCE  conf 0.50 → 0.65
+      reason: promo_active moved from true in week 1 to false in week 2, so the driver is off its baseline in the direction that explains lower revenue, which fell from 66,419.51 to 57,665.6 (about -13%). Price (2.85 to 2.82) and distribution (955 to 949) barely changed, so they offer no better explanation.
+
+======================================================================
+WEEK 3
+======================================================================
+  East   revenue     58,418  (+2.1% WoW)
+  North  revenue     51,476  (-10.7% WoW)
+  South  revenue     58,133  (+1.0% WoW)
+  West   revenue     57,201  (-0.6% WoW)
+
+--- FLAGGED: North revenue -10.7% WoW ---
+  1 active belief(s) in memory; testing against new data.
+
+  Belief: "Promotions ended, removing the week-1 demand lift."  (conf 0.65)
+    data checked [promo_active]: wk1=yes  wk2=no  wk3=no
+    revenue for context:  wk1=66,419.51  wk2=57,665.6  wk3=51,475.88
+    → REINFORCE  conf 0.65 → 0.80
+      reason: promo_active is still false in week 3 versus true in the week-1 baseline, so the driver remains off baseline in the direction that explains lower revenue, which fell again from 57,665.6 to 51,475.88 (about -22.5% vs week 1). The distribution drop (949 to 859) may add to the decline, but the promo metric itself still supports the claim.
+
+======================================================================
+WEEK 4
+======================================================================
+  East   revenue     57,234  (-2.0% WoW)
+  North  revenue     46,249  (-10.2% WoW)
+  South  revenue     58,198  (+0.1% WoW)
+  West   revenue     57,733  (+0.9% WoW)
+
+--- FLAGGED: North revenue -10.2% WoW ---
+  1 active belief(s) in memory; testing against new data.
+
+  Belief: "Promotions ended, removing the week-1 demand lift."  (conf 0.80)
+    data checked [promo_active]: wk1=yes  wk2=no  wk3=no  wk4=no
+    revenue for context:  wk1=66,419.51  wk2=57,665.6  wk3=51,475.88  wk4=46,248.63
+    → REINFORCE  conf 0.80 → 0.95
+      reason: promo_active is still false in week 4 versus true in the week-1 baseline, so the driver remains off baseline in the direction that explains lower revenue, which is down about 30% from 66,419.51 to 46,248.63. Distribution is also falling (955 to 763), but the promo metric still supports the claim.
+
+======================================================================
+WEEK 5
+======================================================================
+  East   revenue     57,773  (+0.9% WoW)
+  North  revenue     46,634  (+0.8% WoW)
+  South  revenue     57,278  (-1.6% WoW)
+  West   revenue     57,761  (+0.0% WoW)
+
+  No regions flagged.
+
+======================================================================
+WEEK 6
+======================================================================
+  East   revenue     57,086  (-1.2% WoW)
+  North  revenue     46,654  (+0.0% WoW)
+  South  revenue     57,028  (-0.4% WoW)
+  West   revenue     58,127  (+0.6% WoW)
+
+  No regions flagged.
+
+======================================================================
+FINAL BELIEFS
+======================================================================
+  North  contradicted 0.10  [avg_price] Average price rose, dampening demand in North.
+  North  contradicted 0.10  [distribution_points] Lost distribution points reduced product availability in North.
+  North  active       0.95  [promo_active] Promotions ended, removing the week-1 demand lift.
+
+found_true_cause: False
+score: 30.0  {'true_cause_found': 0, 'timeliness': 0.0, 'no_wrong_active': 10, 'no_non_causal': 10, 'no_duplicates': 10}
+Saved log to runs/run_20261011_214100.txt and summary to runs collection.
