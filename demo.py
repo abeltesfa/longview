@@ -12,6 +12,7 @@ from rich.table import Table
 from rich.text import Text
 
 import llm
+from score import score_run
 from agent import found_true_cause, process_week
 from memory import get_beliefs, reset_memory
 from playbook import best_agent_version, get_active_playbook, params, set_active_version
@@ -26,7 +27,7 @@ STATUS_STYLE = {"active": "green", "contradicted": "red", "superseded": "magenta
 
 def _series(points):
     return "  ".join(f"wk{p['week']} {p['value']:,}" if not isinstance(p["value"], bool)
-                     else f"wk{p['week']} {'Y' if p['value'] else 'n'}" for p in points)
+                     else f"wk{p['week']} {'yes' if p['value'] else 'no'}" for p in points)
 
 
 def render_revenue(summary, threshold_pct):
@@ -76,7 +77,8 @@ def render_beliefs(week, previous):
         key = str(b["_id"])
         snapshot[key] = (b["status"], b["confidence"])
         before = previous.get(key)
-        row_style = ""
+        closed = next((h["week"] for h in b["history"] if h["new_status"] != "active"), None)
+        row_style = "" if closed is None else "dim"
         if before is None:
             change = Text("NEW", style="bold cyan")
             row_style = "on grey11"
@@ -88,7 +90,10 @@ def render_beliefs(week, previous):
             change = Text(f"{delta:+.2f}", style="green" if delta > 0 else "red")
         else:
             change = Text("–", style="dim")
-        table.add_row(b["claim"], b["metric"], Text(b["status"], style=STATUS_STYLE.get(b["status"], "")),
+        status = Text(b["status"], style=STATUS_STYLE.get(b["status"], ""))
+        if closed is not None:
+            status.append(f"\nclosed wk {closed}", style="dim")
+        table.add_row(b["claim"], b["metric"], status,
                       f"{b['confidence']:.2f}", change, style=row_style)
     console.print(table)
     return snapshot
@@ -149,8 +154,9 @@ def run_demo(args):
     console.print(side_by_side)
 
     found = found_true_cause()
+    llm.track_run_scored(playbook["version"], score_run(WEEKS[-1]), source="demo")
     console.print(Panel.fit(
-        f"[bold]found_true_cause: {'[green]TRUE' if found else '[red]FALSE'}[/][/]\n"
+        f"[bold]found_true_cause: {'[green]yes' if found else '[red]no'}[/][/]\n"
         f"[dim]Active {REGION} belief on distribution_points with confidence ≥ 0.7[/]",
         border_style="green" if found else "red"))
     console.print(f"[dim]LLM calls: {llm.stats['calls']} · tokens in {llm.stats['input_tokens']:,} "

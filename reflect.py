@@ -83,7 +83,8 @@ def reflect(run_doc, playbook, rejected=None):
     }
     if rejected:
         payload["previous_rejected_proposal"] = rejected
-    proposal = ask_json(SYSTEM, json.dumps(payload, default=str))
+    proposal = ask_json(SYSTEM, json.dumps(payload, default=str), event="playbook_reflection",
+                        playbook_version=playbook["version"])
 
     rules, changes = [], []
     for r in proposal.get("rules", []):

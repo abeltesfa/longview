@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from agent import process_week
+from llm import track_run_scored
 from db import get_db
 from memory import get_beliefs, reset_memory
 from playbook import get_active_playbook
@@ -80,6 +81,8 @@ def execute_run(weeks, echo=True):
 
             summary = build_run_summary(started_at, playbook, weeks, log_path.name)
             get_db()["runs"].insert_one(dict(summary))
+            track_run_scored(playbook["version"], summary["score_breakdown"], source="run",
+                             extra={"log_file": summary["log_file"]})
 
             print(f"\n{'=' * 70}\nFINAL BELIEFS\n{'=' * 70}")
             for region, items in summary["final_beliefs"].items():

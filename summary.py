@@ -43,4 +43,4 @@ def summarize(week, use_memory, region=REGION):
             "interventions": [{"week": i["week"], "description": i["description"]}
                               for i in get_interventions(region)],
         }
-    return ask_json(SYSTEM, json.dumps(context)).get("summary", "")
+    return ask_json(SYSTEM, json.dumps(context), event="executive_summary").get("summary", "")

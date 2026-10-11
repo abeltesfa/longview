@@ -27,6 +27,7 @@ TRUE_CAUSE_MIN_CONFIDENCE = 0.7
 HYPOTHESIS_SYSTEM = """You are a sales analyst. A region's revenue is falling.
 Propose 2-3 competing causal hypotheses. Each must name exactly one metric from the
 provided list that would confirm or refute it. Prefer hypotheses that test different metrics.
+Keep each claim to 12 words or fewer; put numbers and detail in the rationale.
 
 Playbook rules (must follow):
 {rules}
@@ -39,8 +40,9 @@ and the belief's history, decide how the belief should change. Judge the belief 
 metric first. Use other_driver_series only to find a replacement when the belief is refuted.
 - REINFORCE: the metric data supports the claim.
 - CONTRADICT: the metric data clearly refutes the claim and you have no better explanation.
-- SUPERSEDE: the data refutes the claim AND points to a better explanation; give it as new_claim,
-  with new_metric naming the metric (from the list) that would test it.
+- SUPERSEDE: the data refutes the claim AND points to a better explanation; give it as new_claim
+  (12 words or fewer, details go in reason), with new_metric naming the metric (from the list)
+  that would test it.
 - NO_CHANGE: the data is inconclusive.
 Base the decision on the numbers. Keep reason to one or two sentences citing them.
 
@@ -53,7 +55,7 @@ Return: {{"action": "REINFORCE|CONTRADICT|SUPERSEDE|NO_CHANGE", "reason": "...",
 
 def _fmt_series(series):
     return "  ".join(f"wk{p['week']}={p['value']:,}" if not isinstance(p["value"], bool)
-                     else f"wk{p['week']}={'Y' if p['value'] else 'n'}" for p in series)
+                     else f"wk{p['week']}={'yes' if p['value'] else 'no'}" for p in series)
 
 
 def _silent(*args, **kwargs):
@@ -88,7 +90,7 @@ def _propose_hypotheses(region, week, playbook, say, events):
         "region": region,
         "weekly_revenue": revenue,
         "available_metrics": allowed,
-    }))
+    }), event="hypothesis_generation", playbook_version=playbook["version"])
     for h in result.get("hypotheses", [])[:3]:
         if h.get("metric") not in allowed:
             say(f"    skipped hypothesis with disallowed metric {h.get('metric')!r}: {h.get('claim')}")
@@ -126,7 +128,7 @@ def _evaluate(belief, week, interventions, use_memory, playbook, say, events):
         "interventions": [{"week": i["week"], "description": i["description"]} for i in interventions],
         "belief_history": history,
         "available_metrics": allowed,
-    }))
+    }), event="belief_decision", playbook_version=playbook["version"])
 
     p = params(playbook)
     action = str(decision.get("action", "NO_CHANGE")).upper()

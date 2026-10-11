@@ -1,0 +1,5 @@
+anthropic==0.125.0
+pymongo==4.18.3
+python-dotenv==1.2.1
+raindrop-ai==0.0.19  # newest release that supports Python 3.9
+rich==15.0.0
