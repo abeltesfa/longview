@@ -1,0 +1,93 @@
+────────────────────────────────────────────────── Baseline: playbook v0 (no rules, guardrails off) ──────────────────────────────────────────────────
+  v0 scored 70.0  (found True, {'true_cause_found': 35, 'timeliness': 25.0, 'no_wrong_active': 10, 'no_non_causal': 0, 'no_duplicates': 0})  16 LLM 
+calls · runs/run_20261011_200530.txt
+───────────────────────────────────────────────────────────── Iteration 1: reflect on v0 ─────────────────────────────────────────────────────────────
+Diagnosis: The agent found the true driver (distribution loss) and became confident quickly, but it also opened beliefs testing units, a symptom 
+metric, and created duplicate beliefs on the same region and metric. A wrong 'units' belief stayed active at 0.99, and two duplicate distribution 
+beliefs were left active. This cost points on non-causal beliefs, duplicates, and wrong active beliefs.
+  • added rule: Only propose hypotheses about causal drivers (price, distribution, promotion). Revenue and units are symptoms of those drivers, so 
+never test them as the cause. (Removes the symptom-metric beliefs that cost points.)
+  • added rule: Before proposing a hypothesis, check whether an active belief in the same region already tests that metric. If so, reinforce, edit, or
+supersede it instead of creating a new one. (Prevents duplicate beliefs on the same region and metric.)
+  • added rule: When a metric moves sharply (such as distribution falling by more than 10% in a week) and units fall with it, treat that metric as a 
+leading candidate cause, and check it first each week. (Speeds up identification of the true driver.)
+  • added rule: When a new belief supersedes an old one, the old one must be closed. Do not leave two active beliefs that make the same claim. (Keeps 
+only one active belief per cause.)
+  • added rule: A hypothesis that explains only part of a decline is not fully confirmed. Reinforce it only when its metric changes at the same time 
+as the decline, and contradict it when the decline continues while its metric is flat. (Avoids over-reinforcing lagging or secondary explanations.)
+  • guardrail causal_metrics_only: off → on (Blocks beliefs testing units or revenue, which are symptoms.)
+  • guardrail no_duplicate_metric_beliefs: off → on (Blocks duplicate beliefs on the same region and metric.)
+  • parameter reinforce_boost: 0.15 → 0.2 (Reaches the 0.7 confidence threshold faster when evidence supports the cause.)
+  • parameter drop_threshold: 0.05 → 0.04 (Flag declines slightly earlier to improve timeliness.)
+Saved as playbook v9 (author: agent, parent v0)
+  v9 scored 100.0  (found True, {'true_cause_found': 35, 'timeliness': 25.0, 'no_wrong_active': 20, 'no_non_causal': 10, 'no_duplicates': 10})  8 LLM 
+calls · runs/run_20261011_200615.txt
+✔ Accepted v9: score 70.0 → 100.0
+Perfect score; stopping early.
+────────────────────────────────────────────────────────────────────── Results ───────────────────────────────────────────────────────────────────────
+┏━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Version ┃ Author ┃ Changes                                                                    ┃ Score ┃ found_true_cause ┃ Outcome                 ┃
+┡━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│      v0 │ human  │ baseline: no rules, all guardrails off                                     │  70.0 │ yes              │ baseline                │
+├─────────┼────────┼────────────────────────────────────────────────────────────────────────────┼───────┼──────────────────┼─────────────────────────┤
+│      v9 │ agent  │ added rule: Only propose hypotheses about causal drivers (price,           │ 100.0 │ yes              │ accepted (70.0 → 100.0) │
+│         │        │ distribution, promotion). Revenue and units are symptoms of those drivers, │       │                  │                         │
+│         │        │ so never test them as the cause. (Removes the symptom-metric beliefs that  │       │                  │                         │
+│         │        │ cost points.)                                                              │       │                  │                         │
+│         │        │ added rule: Before proposing a hypothesis, check whether an active belief  │       │                  │                         │
+│         │        │ in the same region already tests that metric. If so, reinforce, edit, or   │       │                  │                         │
+│         │        │ supersede it instead of creating a new one. (Prevents duplicate beliefs on │       │                  │                         │
+│         │        │ the same region and metric.)                                               │       │                  │                         │
+│         │        │ added rule: When a metric moves sharply (such as distribution falling by   │       │                  │                         │
+│         │        │ more than 10% in a week) and units fall with it, treat that metric as a    │       │                  │                         │
+│         │        │ leading candidate cause, and check it first each week. (Speeds up          │       │                  │                         │
+│         │        │ identification of the true driver.)                                        │       │                  │                         │
+│         │        │ added rule: When a new belief supersedes an old one, the old one must be   │       │                  │                         │
+│         │        │ closed. Do not leave two active beliefs that make the same claim. (Keeps   │       │                  │                         │
+│         │        │ only one active belief per cause.)                                         │       │                  │                         │
+│         │        │ added rule: A hypothesis that explains only part of a decline is not fully │       │                  │                         │
+│         │        │ confirmed. Reinforce it only when its metric changes at the same time as   │       │                  │                         │
+│         │        │ the decline, and contradict it when the decline continues while its metric │       │                  │                         │
+│         │        │ is flat. (Avoids over-reinforcing lagging or secondary explanations.)      │       │                  │                         │
+│         │        │ guardrail causal_metrics_only: off → on (Blocks beliefs testing units or   │       │                  │                         │
+│         │        │ revenue, which are symptoms.)                                              │       │                  │                         │
+│         │        │ guardrail no_duplicate_metric_beliefs: off → on (Blocks duplicate beliefs  │       │                  │                         │
+│         │        │ on the same region and metric.)                                            │       │                  │                         │
+│         │        │ parameter reinforce_boost: 0.15 → 0.2 (Reaches the 0.7 confidence          │       │                  │                         │
+│         │        │ threshold faster when evidence supports the cause.)                        │       │                  │                         │
+│         │        │ parameter drop_threshold: 0.05 → 0.04 (Flag declines slightly earlier to   │       │                  │                         │
+│         │        │ improve timeliness.)                                                       │       │                  │                         │
+└─────────┴────────┴────────────────────────────────────────────────────────────────────────────┴───────┴──────────────────┴─────────────────────────┘
+                                                                   Final playbooks                                                                    
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ v9 (agent, score 100.0)                                                 ┃ v2 (human)                                                               ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ 1. Only propose hypotheses about causal drivers (price, distribution,   │ 1. Hypotheses must name a driver metric that could cause the revenue     │
+│ promotion). Revenue and units are symptoms of those drivers, so never   │ change, never revenue or units themselves.                               │
+│ test them as the cause.                                                 │ 2. Judge a belief by whether its driver metric is still off its week-1   │
+│ 2. Before proposing a hypothesis, check whether an active belief in the │ baseline in the direction that explains lower revenue. Replace or        │
+│ same region already tests that metric. If so, reinforce, edit, or       │ contradict it only once its own metric no longer supports it (for        │
+│ supersede it instead of creating a new one.                             │ example, the driver has returned to baseline while revenue stays down).  │
+│ 3. When a metric moves sharply (such as distribution falling by more    │ 3. Never create a belief that duplicates another active belief's metric  │
+│ than 10% in a week) and units fall with it, treat that metric as a      │ for the same region.                                                     │
+│ leading candidate cause, and check it first each week.                  │                                                                          │
+│ 4. When a new belief supersedes an old one, the old one must be closed. │ Guardrails                                                               │
+│ Do not leave two active beliefs that make the same claim.               │ ✔ causal_metrics_only                                                    │
+│ 5. A hypothesis that explains only part of a decline is not fully       │ ✔ no_duplicate_metric_beliefs                                            │
+│ confirmed. Reinforce it only when its metric changes at the same time   │                                                                          │
+│ as the decline, and contradict it when the decline continues while its  │ Parameters                                                               │
+│ metric is flat.                                                         │ initial_confidence = 0.5                                                 │
+│                                                                         │ reinforce_boost = 0.15                                                   │
+│ Guardrails                                                              │ contradict_penalty = 0.4                                                 │
+│ ✔ causal_metrics_only                                                   │ drop_threshold = 0.05                                                    │
+│ ✔ no_duplicate_metric_beliefs                                           │                                                                          │
+│                                                                         │                                                                          │
+│ Parameters                                                              │                                                                          │
+│ initial_confidence = 0.5                                                │                                                                          │
+│ reinforce_boost = 0.2                                                   │                                                                          │
+│ contradict_penalty = 0.4                                                │                                                                          │
+│ drop_threshold = 0.04                                                   │                                                                          │
+└─────────────────────────────────────────────────────────────────────────┴──────────────────────────────────────────────────────────────────────────┘
+
+LLM usage: 25 calls (24 in runs, 1 reflections) · tokens in 32,661 / out 5,081
+Active playbook restored to v2. To adopt the agent's version: playbook.set_active_version(<n>).

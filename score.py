@@ -2,8 +2,8 @@
 
 Points (max 100):
   35  true cause found (active West belief on distribution_points, confidence >= 0.7)
-  25  timeliness: full marks if that belief was reinforced to >= 0.7 in the first week the data
-      showed the cause (distribution first fell), losing an equal share for each week later
+  25  timeliness: full marks if that belief was reinforced to >= 0.7 by the week after the cause
+      first appeared in the data, losing an equal share for each week later (see timeliness_points)
   20  minus 10 per wrong belief still active at the end
   10  minus 5 per belief on a non-causal metric (units or revenue)
   10  minus 5 per duplicate belief (created while another active belief had the same region + metric)
@@ -49,6 +49,24 @@ def _duplicates(beliefs):
     return count
 
 
+def timeliness_points(confident_week, visible_week, last_week):
+    """25 points for becoming confident on time, scaled down linearly for each week late.
+
+    "On time" is the week AFTER the cause first appears in the data, not the same week.
+    A belief only reaches 0.7 through reinforcement, and the agent tests a belief at most
+    once per week: the earliest it can see the driver move is the week it first moves (where
+    it creates or supersedes into a belief), and the earliest it can confirm it is the week
+    after. Scoring the same week as full marks would set a target no run can reach.
+    """
+    if confident_week is None or visible_week is None:
+        return 0.0
+    on_time = visible_week + 1
+    span = last_week - on_time + 1
+    if span <= 0:
+        return 25.0 if confident_week <= last_week else 0.0
+    return round(25 * max(0.0, 1 - max(0, confident_week - on_time) / span), 1)
+
+
 def score_run(last_week):
     beliefs = get_beliefs()
     found = found_true_cause()
@@ -59,15 +77,11 @@ def score_run(last_week):
     non_causal = sum(1 for b in beliefs if b["metric"] in NON_CAUSAL_METRICS)
     duplicates = _duplicates(beliefs)
 
-    if first_week is None or visible_week is None:
-        timeliness = 0.0
-    else:
-        span = last_week - visible_week + 1
-        timeliness = 25 * max(0.0, 1 - max(0, first_week - visible_week) / span)
+    timeliness = timeliness_points(first_week, visible_week, last_week)
 
     points = {
         "true_cause_found": 35 if found else 0,
-        "timeliness": round(timeliness, 1),
+        "timeliness": timeliness,
         "no_wrong_active": max(0, 20 - 10 * wrong_active),
         "no_non_causal": max(0, 10 - 5 * non_causal),
         "no_duplicates": max(0, 10 - 5 * duplicates),

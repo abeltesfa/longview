@@ -1,0 +1,116 @@
+Run started 2026-10-11 20:06:15 UTC, playbook v9 (agent)
+Memory reset.
+
+======================================================================
+WEEK 2
+======================================================================
+  East   revenue     57,220  (-1.6% WoW)
+  North  revenue     57,666  (-0.2% WoW)
+  South  revenue     57,549  (-0.5% WoW)
+  West   revenue     53,244  (-8.1% WoW)
+
+--- FLAGGED: West revenue -8.1% WoW ---
+  No active beliefs; asking LLM for hypotheses:
+    + [avg_price] Average price increased in the West region, reducing demand and driving the week 1 to week 2 revenue decline (about 8.1%).  (conf 0.5)
+    + [distribution_points] Distribution shrank in the West region (fewer stores or placements carrying the product), reducing availability and causing the revenue decline.  (conf 0.5)
+    + [promo_active] A promotion that was active in week 1 ended before week 2, removing the promotional lift and causing revenue to fall.  (conf 0.5)
+
+  Belief: "Average price increased in the West region, reducing demand and driving the week 1 to week 2 revenue decline (about 8.1%)."  (conf 0.50)
+    data checked [avg_price]: wk1=2.82  wk2=3.06
+    revenue for context:  wk1=57,959.81  wk2=53,244.08
+    → REINFORCE  conf 0.50 → 0.70
+      reason: Average price rose from 2.82 to 3.06 (about +8.5%) in the same week revenue fell from 57,959.81 to 53,244.08 (about -8.1%), while distribution (950) and promo (inactive) were unchanged, so price is the only driver that moved with the decline.
+
+  Belief: "Distribution shrank in the West region (fewer stores or placements carrying the product), reducing availability and causing the revenue decline."  (conf 0.50)
+    data checked [distribution_points]: wk1=950  wk2=950
+    revenue for context:  wk1=57,959.81  wk2=53,244.08
+    → CONTRADICT (replacement already covered by an active belief)  conf 0.50 → 0.10
+      reason: Distribution points are flat at 950 in both weeks while revenue fell from 57,959.81 to 53,244.08 (about -8.1%), so the distribution claim is refuted. Average price rose from 2.82 to 3.06 (about +8.5%) with no promo active, which points to price as a better explanation.
+
+  Belief: "A promotion that was active in week 1 ended before week 2, removing the promotional lift and causing revenue to fall."  (conf 0.50)
+    data checked [promo_active]: wk1=n  wk2=n
+    revenue for context:  wk1=57,959.81  wk2=53,244.08
+    → CONTRADICT (replacement already covered by an active belief)  conf 0.50 → 0.10
+      reason: promo_active was false in both weeks 1 and 2, so no promotion ended and the claim is refuted. Revenue fell about 8.1% (57,960 to 53,244) while avg_price rose about 8.5% (2.82 to 3.06) and distribution stayed flat at 950, which points to price as the driver.
+
+======================================================================
+WEEK 3
+======================================================================
+  East   revenue     58,418  (+2.1% WoW)
+  North  revenue     57,240  (-0.7% WoW)
+  South  revenue     58,133  (+1.0% WoW)
+  West   revenue     45,335  (-14.9% WoW)
+
+--- FLAGGED: West revenue -14.9% WoW ---
+  1 active belief(s) in memory; testing against new data.
+
+  Belief: "Average price increased in the West region, reducing demand and driving the week 1 to week 2 revenue decline (about 8.1%)."  (conf 0.70)
+    data checked [avg_price]: wk1=2.82  wk2=3.06  wk3=3.06
+    revenue for context:  wk1=57,959.81  wk2=53,244.08  wk3=45,335.46
+    → SUPERSEDE  old conf 0.70 → superseded
+      new belief: [distribution_points] "Distribution points in the West fell about 15% (950 to 807) in week 3, driving the week 2 to week 3 revenue decline of about 14.9%. The earlier price increase explains only the week 1 to week 2 dip."  (conf 0.60)
+      reason: Price was flat from week 2 to week 3 (3.06) while revenue fell a further 14.9% (53,244 to 45,335), so price does not explain the continuing decline. Distribution dropped from 950 to 807 (-15%) in the same week, making it the leading candidate cause.
+
+======================================================================
+WEEK 4
+======================================================================
+  East   revenue     57,234  (-2.0% WoW)
+  North  revenue     57,178  (-0.1% WoW)
+  South  revenue     58,198  (+0.1% WoW)
+  West   revenue     42,552  (-6.1% WoW)
+  intervention recorded: West promo in week 4
+
+--- FLAGGED: West revenue -6.1% WoW ---
+  1 active belief(s) in memory; testing against new data.
+
+  Belief: "Distribution points in the West fell about 15% (950 to 807) in week 3, driving the week 2 to week 3 revenue decline of about 14.9%. The earlier price increase explains only the week 1 to week 2 dip."  (conf 0.60)
+    data checked [distribution_points]: wk1=950  wk2=950  wk3=807  wk4=687
+    revenue for context:  wk1=57,959.81  wk2=53,244.08  wk3=45,335.46  wk4=42,551.52
+    → REINFORCE  conf 0.60 → 0.80
+      reason: Distribution fell again in week 4 (807 to 687, about -15%) while revenue kept declining (45,335 to 42,552, about -6%), consistent with distribution driving the decline. The week 3 drop (950 to 807) coincided with the revenue fall of about 14.9%, and the week 4 promo and price cut (3.06 to 2.85) likely cushioned the decline.
+
+======================================================================
+WEEK 5
+======================================================================
+  East   revenue     57,773  (+0.9% WoW)
+  North  revenue     57,645  (+0.8% WoW)
+  South  revenue     57,278  (-1.6% WoW)
+  West   revenue     35,903  (-15.6% WoW)
+
+--- FLAGGED: West revenue -15.6% WoW ---
+  1 active belief(s) in memory; testing against new data.
+
+  Belief: "Distribution points in the West fell about 15% (950 to 807) in week 3, driving the week 2 to week 3 revenue decline of about 14.9%. The earlier price increase explains only the week 1 to week 2 dip."  (conf 0.80)
+    data checked [distribution_points]: wk1=950  wk2=950  wk3=807  wk4=687  wk5=584
+    revenue for context:  wk1=57,959.81  wk2=53,244.08  wk3=45,335.46  wk4=42,551.52  wk5=35,902.95
+    → REINFORCE  conf 0.80 → 0.99
+      reason: Distribution fell again in week 5 (687 to 584, about -15%) as revenue dropped from 42,552 to 35,903 (about -15.6%). Price was flat (2.85 to 2.84) and the promo ended, so the decline tracks distribution, which has now fallen about 39% since week 2 alongside a revenue decline of about 33%.
+
+======================================================================
+WEEK 6
+======================================================================
+  East   revenue     57,086  (-1.2% WoW)
+  North  revenue     57,698  (+0.1% WoW)
+  South  revenue     57,028  (-0.4% WoW)
+  West   revenue     30,119  (-16.1% WoW)
+
+--- FLAGGED: West revenue -16.1% WoW ---
+  1 active belief(s) in memory; testing against new data.
+
+  Belief: "Distribution points in the West fell about 15% (950 to 807) in week 3, driving the week 2 to week 3 revenue decline of about 14.9%. The earlier price increase explains only the week 1 to week 2 dip."  (conf 0.99)
+    data checked [distribution_points]: wk1=950  wk2=950  wk3=807  wk4=687  wk5=584  wk6=497
+    revenue for context:  wk1=57,959.81  wk2=53,244.08  wk3=45,335.46  wk4=42,551.52  wk5=35,902.95  wk6=30,118.76
+    → REINFORCE  conf 0.99 → 0.99
+      reason: Distribution fell again in week 6 (584 to 497, about -15%) while revenue dropped from 35,903 to 30,119 (about -16%), with price flat (2.84 to 2.82) and no promo, so the decline continues to track distribution, which is down about 48% since week 2.
+
+======================================================================
+FINAL BELIEFS
+======================================================================
+  West   superseded   0.30  [avg_price] Average price increased in the West region, reducing demand and driving the week 1 to week 2 revenue decline (about 8.1%).
+  West   contradicted 0.10  [distribution_points] Distribution shrank in the West region (fewer stores or placements carrying the product), reducing availability and causing the revenue decline.
+  West   contradicted 0.10  [promo_active] A promotion that was active in week 1 ended before week 2, removing the promotional lift and causing revenue to fall.
+  West   active       0.99  [distribution_points] Distribution points in the West fell about 15% (950 to 807) in week 3, driving the week 2 to week 3 revenue decline of about 14.9%. The earlier price increase explains only the week 1 to week 2 dip.
+
+found_true_cause: True
+score: 100.0  {'true_cause_found': 35, 'timeliness': 25.0, 'no_wrong_active': 20, 'no_non_causal': 10, 'no_duplicates': 10}
+Saved log to runs/run_20261011_200615.txt and summary to runs collection.

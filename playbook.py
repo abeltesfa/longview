@@ -154,9 +154,9 @@ def version_scores():
 
 
 def best_agent_version():
-    """Highest-scoring agent-written version (newest wins ties), or None."""
+    """Highest-scoring agent-written version that was not rejected (newest wins ties), or None."""
     scores = version_scores()
-    agent_versions = [p["version"] for p in _playbook().find({"author": "agent"})]
+    agent_versions = [p["version"] for p in _playbook().find({"author": "agent", "accepted": {"$ne": False}})]
     scored = [(scores[v]["score"], v) for v in agent_versions if v in scores]
     return max(scored)[1] if scored else None
 

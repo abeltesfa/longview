@@ -2,7 +2,7 @@
 
 Starts from the blank v0 playbook. Each iteration: run weeks 2-6, score the run, reflect,
 save a new agent-written playbook version, and run again. A candidate is accepted only if
-its score does not drop; otherwise it is rejected and the reason is logged.
+its score is strictly higher; on a tie or a drop the parent is kept and the reason is logged.
 
 Usage: python improve.py [--iterations N]
 """
@@ -12,7 +12,7 @@ from rich.console import Console
 from rich.table import Table
 
 import llm
-from playbook import GUARDRAILS, ensure_seed_versions, params, get_active_playbook, get_playbook, set_active_version
+from playbook import GUARDRAILS, _playbook, ensure_seed_versions, params, get_active_playbook, get_playbook, set_active_version
 from reflect import reflect
 from run import execute_run
 
@@ -73,12 +73,17 @@ def main():
 
         candidate_run = run_version(version)
         changes = "\n".join(proposal["changes"]) or "(none)"
-        if candidate_run["score"] >= current_run["score"]:
+        accepted = candidate_run["score"] > current_run["score"]
+        _playbook().update_one({"version": version}, {"$set": {"accepted": accepted}})
+        if accepted:
             outcome = f"accepted ({current_run['score']} → {candidate_run['score']})"
             console.print(f"[green]✔ Accepted v{version}[/]: score {current_run['score']} → {candidate_run['score']}")
             current, current_run, rejected = get_playbook(version), candidate_run, None
         else:
-            reason = f"score dropped {current_run['score']} → {candidate_run['score']}"
+            if candidate_run["score"] == current_run["score"]:
+                reason = f"no improvement ({candidate_run['score']})"
+            else:
+                reason = f"score dropped {current_run['score']} → {candidate_run['score']}"
             outcome = f"rejected: {reason}"
             console.print(f"[red]✘ Rejected v{version}[/]: {reason}; keeping v{current['version']}")
             rejected = {"version": version, "changes": proposal["changes"], "score": candidate_run["score"],
