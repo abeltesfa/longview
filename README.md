@@ -2,6 +2,14 @@
 
 **An analyst agent with memory that also rewrites its own playbook.**
 
+## At a glance
+
+- **What it does:** each week it reads sales data, guesses why revenue dropped, and checks those guesses against the numbers. It keeps every guess in MongoDB as a *belief* with a confidence and a full history, so next week starts where this week left off.
+- **It writes its own playbook:** after each run it gets a hard score (no LLM), looks back at what went wrong (including its own LLM telemetry from Raindrop), and writes a new version of its rules. A new version is kept only if the score strictly improves.
+- **Training scenario (A):** a blank playbook scores 65–80 (65 in the latest run). Versions the agent wrote itself score 91.7–100. My hand-written playbook scores 91.7.
+- **Hardest held-out scenario (D):** blank 7.5 → agent-written v10 35 → v11 70. My hand-written v2 scores 60. No playbook found the cause more than 1 time in 2.
+- **Shared weakness:** every playbook, mine included, is slow to let go of a first guess that is still partly right.
+
 Longview reads weekly sales data, forms hypotheses about why revenue moved, and keeps them in MongoDB as *beliefs* with confidence and a full history. When new data arrives, each belief is reinforced, contradicted or superseded. A self-improvement loop scores every run with hard metrics and lets the agent revise the rules it follows.
 
 **The problem:** agents that summarize recurring reports forget everything between runs. Each week they start over: they rediscover the same red herrings, can't tell a one-off dip from a trend, and can't say *"we thought it was pricing, but the data ruled that out in week 3."*
@@ -62,15 +70,17 @@ Longview reads weekly sales data, forms hypotheses about why revenue moved, and 
 
 | Points | Criterion |
 |---:|---|
-| 35 | True cause found (active West belief on `distribution_points`, confidence ≥ 0.7) |
-| 25 | Timeliness: full marks if confidence ≥ 0.7 is reached the week *after* the cause first appears in the data |
+| 35 | True cause found: an active belief on the scenario's true-cause region and metric (A: West, `distribution_points`), confidence ≥ 0.7 |
+| 25 | Timeliness: full marks if confidence ≥ 0.7 is reached by the week *after* the cause first appears (the scenario's `cause_first_week`) |
 | 20 | −10 per wrong belief still active at the end |
 | 10 | −5 per belief that tests a symptom (`units`, `revenue`) |
 | 10 | −5 per duplicate belief (same region and metric as another active one) |
 
 ---
 
-## MongoDB collections (database `longview`)
+## MongoDB collections
+
+Database `longview` by default; set `LONGVIEW_DB` to use another (the held-out tests use `longview_holdout`).
 
 | Collection | Stores |
 |---|---|
@@ -78,7 +88,8 @@ Longview reads weekly sales data, forms hypotheses about why revenue moved, and 
 | `beliefs` | Claim, metric, status (`active`/`contradicted`/`superseded`), confidence, evidence list, **full change history**, `superseded_by`/`supersedes` links |
 | `interventions` | Real-world actions per region and week (e.g. the West promo) |
 | `playbook` | Versioned playbooks: rules, guardrail flags, parameters, author (`human`/`agent`), parent version, change log, accepted flag |
-| `runs` | One document per run: playbook version, final beliefs with histories, score + breakdown, `found_true_cause`, session id, log file |
+| `runs` | One document per run: playbook version, final beliefs with histories, score + breakdown, `found_true_cause`, session id, database, scenario, log file |
+| `scenario` | Which scenario (A–D) the loaded data comes from; scoring reads the true cause from it. Absent means A. |
 
 ---
 
@@ -100,16 +111,20 @@ Loops 1–2 are shown rescored under the current timeliness rule; see Limitation
 
 v0 usually *does* find the cause; it loses points for clutter. It tests symptoms (`units`), opens duplicate beliefs, and leaves wrong beliefs active. Each time, the first reflection fixes that by writing rules and turning on both guardrails.
 
-### Agent playbook (v8, default for the demo) vs. human-written v2
+### Agent playbooks (v8, v10) vs. human-written v2
 
-| | **v8 (agent)**, score 100 | **v2 (human)**, score 91.7 |
-|---|---|---|
-| Rules | 1. Only causal drivers; revenue and units are outcomes. 2. Reuse an existing belief on the same region and metric instead of duplicating it. 3. Compare each driver's weekly change with revenue's; a driver that stops moving while revenue keeps falling can't explain the decline. 4. A single-week match is tentative until the driver keeps moving. 5. Re-test rejected drivers each week; reinforce decisively on a large move. 6. A replacement belief must test a different causal metric. | 1. Hypotheses name a driver metric, never revenue or units. 2. Judge a belief against its week-1 baseline; replace it only once its own metric no longer supports it. 3. No duplicate beliefs per region and metric. |
-| Guardrails | both on | both on |
-| Parameters | initial 0.65 · boost 0.30 · penalty 0.4 · flag at 3% | initial 0.5 · boost 0.15 · penalty 0.4 · flag at 5% |
-| Behavior | Drops pricing in **week 3** and is confident in distribution by **week 4** | Holds pricing through week 3 and is confident in distribution in **week 5** |
+| | **v8 (agent)**, score 100 | **v10 (agent)**, score 91.7 | **v2 (human)**, score 91.7 |
+|---|---|---|---|
+| Rules | 1. Only causal drivers; revenue and units are outcomes. 2. Reuse an existing belief on the same region and metric instead of duplicating it. 3. Compare each driver's weekly change with revenue's; a driver that stops moving while revenue keeps falling can't explain the decline. 4. A single-week match is tentative until the driver keeps moving. 5. Re-test rejected drivers each week; reinforce decisively on a large move. 6. A replacement belief must test a different causal metric. | 1. Only causal levers; revenue and units are symptoms. 2. When volume falls, find the lever that moved. 3. No duplicate beliefs per region and metric. 4. Retire the weaker of two conflicting beliefs. 5. A lever must have changed when the decline began, by a consistent amount; a flat lever can't be the cause. | 1. Hypotheses name a driver metric, never revenue or units. 2. Judge a belief against its week-1 baseline; replace it only once its own metric no longer supports it. 3. No duplicate beliefs per region and metric. |
+| Guardrails | both on | both on | both on |
+| Parameters | initial 0.65 · boost 0.30 · penalty 0.4 · flag at 3% | initial 0.5 · boost 0.20 · penalty 0.4 · flag at 5% | initial 0.5 · boost 0.15 · penalty 0.4 · flag at 5% |
+| Behavior on A | Drops pricing in **week 3**; confident in distribution by **week 4** | Drops pricing in week 3 or 4 depending on the run; its one scored run was confident in **week 5** | Holds pricing through week 3; confident in distribution in **week 5** |
+
+Each score is a single scored run on A. With no `--playbook` flag, `demo.py` picks the best eligible version, which is v8; the live demo uses v10 (see [Recommended demo](#recommended-demo)).
 
 ### Same week-6 summary, memory off vs. on
+
+*From a demo run with v8.*
 
 > **Without memory** (this week's numbers only): *"…Without prior-week or target figures, it is unclear whether this is an increase or decline, so the cause of any performance change cannot be determined from the data provided."*
 
@@ -121,11 +136,12 @@ v0 usually *does* find the cause; it loses points for clutter. It tests symptoms
 
 Playbooks were learned and tuned on scenario A only. To check whether they carry over, `evaluate.py` runs them frozen (no reflection) on **scenarios B, C and D**, which they never saw, in a separate database (`longview_holdout`). (v11 was later trained on C. D is fresh for every version.)
 
-| Version | Author | Scenario B mean | Scenario C mean | found_true_cause (B + C) |
-|---|---|---:|---:|---:|
-| v0 | human (blank) | 65.0 | 80.0 | 4/4 |
-| v2 | human | 100.0 | **91.7** | 4/4 |
-| v10 | agent | 100.0 | 87.5 | 4/4 |
+| Version | Author | Scenario B mean | Scenario C mean | Scenario D mean | found_true_cause (all runs) |
+|---|---|---:|---:|---:|---:|
+| v0 | human (blank) | 65.0 | 80.0 | 7.5 | 4/6 |
+| v2 | human | 100.0 | **91.7** | 60.0 | 5/6 |
+| v10 | agent | 100.0 | 87.5 | 35.0 | 4/6 |
+| v11 | agent (v10 + lessons from C) | not run | *trained on C* | **70.0** | 1/2 (D only) |
 
 **On B and C, the agent-written v10 did no better than the human v2, and slightly worse on C. On D, the hardest test, every playbook mostly failed: v11 (trained on C) and the human v2 each found the cause in 1 of 2 runs; v10 and v0 never did.**
 
@@ -146,6 +162,7 @@ Playbooks were learned and tuned on scenario A only. To check whether they carry
 - **v10 was faster, but the score can't show it.** v10 was confident in week 3, the week the promo ended; v2 got there in week 4. Both earn full timeliness points, so the faster reaction isn't rewarded.
 - **v0 still finds the cause but clutters memory,** just as in scenario A: it tests symptoms, leaves wrong beliefs active and creates a duplicate. The gap between v0 and the guarded playbooks is the same kind of gain as in training.
 - **Scenario B is easier than A.** There's no misleading first guess backed by a moving metric: the promo is the only driver that changes when the decline starts, and the distribution dip arrives after the promo belief already exists. This test checks that the playbooks don't overfit. It isn't a hard test of reasoning.
+
 ### Scenario C: a misleading first guess, then a price rise
 
 **Scenario C:** East's store count dips about 12% in weeks 2–3 (947 → 837) and recovers in week 4 (951). That's the misleading first guess. avg_price rises about 9% from week 3 (2.84 → 3.08) and stays up, and customers drift away over the following weeks. **True cause: `avg_price`.** No promo runs. Revenue falls −13%, −5%, −11%, −10% and −11% week over week, so the decline continues after the stores come back.
@@ -186,7 +203,7 @@ Its diagnosis matches what I found in the logs by hand: it had reinforced distri
 
 **Read this carefully:**
 - **C is no longer held out for v11.** It was trained on C, so 100 on C shows that the loop can fix a failure it observed. It doesn't show generalization. A fresh scenario would be needed for that.
-- **No regression on A, from one run.** v11 scored 100 on A. That's not proof it's better than v10 there: v10 has scored both 91.7 and 100 on A across runs.
+- **No regression on A, from one run.** v11 scored 100 on A. That's not proof it's better than v10 there: v10 has only one scored run on A (91.7), and both are single runs.
 - **Only part of the Raindrop evidence arrived.** The reflector received 3 of the run's 8 events, probably because the rest hadn't been processed yet when it queried.
 - **v11 exists only in `longview_holdout`.** It isn't in the demo database's playbook collection, and the demo still uses the main database's versions.
 
@@ -243,6 +260,7 @@ Run it with `python evaluate.py --scenario B|C|D` (add `--max-calls N` to cap LL
 
 - **User** is `playbook-v<N>`, so Raindrop's per-user views compare playbook versions.
 - **Thread:** every call made by one process (a run, the demo, an improve loop) shares a `session-…` thread id.
+- **Tags:** LLM events record the database (`db`), so held-out runs are distinguishable. `run_scored` events from `run.py` and `evaluate.py` also record the scenario.
 
 **Read-back into reflection (`raindrop_query.py`):** before reflecting, the loop calls the Raindrop **Query API** (`GET https://query.raindrop.ai/v1/events`, plain HTTP, filtered by user, thread and run start time). It then adds a compact summary to the reflector's evidence: event counts, token totals, JSON retries, errors, signals, and raw decision outputs. Without `RAINDROP_QUERY_API_KEY` this step is skipped and the reflector says why.
 
@@ -250,8 +268,8 @@ Run it with `python evaluate.py --scenario B|C|D` (add `--max-calls N` to cap LL
 
 ## Honest limitations
 
-- **Synthetic data, one planted scenario.** Six weeks, four regions, three products and one designed failure mode. The scorer knows the planted answer; real data has no ground truth.
-- **Run-to-run variance.** LLM claims and decisions vary; blank-slate v0 scored between 65 and 80 across four runs. Each candidate version is accepted on a single run.
+- **Synthetic data, four hand-designed scenarios.** Six weeks, four regions, three products. Scenario A is used for training; B, C and D are held out. The scorer knows each planted answer; real data has no ground truth.
+- **Run-to-run variance.** LLM claims and decisions vary. Blank-slate v0 scored between 65 and 80 across four runs on A, and on D v2 scored 30 and 90 in two runs. Each candidate version is accepted on a single run, and most scores in this README come from one or two runs.
 - **Human playbooks v1/v2** were written by me with AI coding assistance. They aren't independent domain-expert baselines.
 - **The scoring metric was revised once.** Timeliness first required confidence in the *same* week the cause appeared. In scenario A that couldn't happen, because the agent reaches the cause by superseding the pricing belief, and a replacement belief is first tested the following week. I first wrote that same-week confidence was impossible in general. That was wrong: the held-out test showed a brand-new hypothesis can reach 0.7 the week it's created. Timeliness now targets the following week, and same-week confidence still earns full marks. Stored runs were rescored exactly from their saved inputs.
 - **The reflector can infer the answer** from belief histories, where metric names are visible. Filters drop rules that name a region or pair a metric with a numeric threshold. These are pattern-based heuristics, not proof of generality.
@@ -282,15 +300,25 @@ RAINDROP_QUERY_API_KEY=
 `LLM_MODEL` is optional and defaults to `claude-sonnet-5-5`.
 
 ```bash
-python generate_data.py              # load the synthetic dataset (fixed seed)
-python demo.py                       # live demo, Enter between weeks (best eligible agent playbook)
+python generate_data.py              # load scenario A, the demo dataset (fixed seed)
+python demo.py --playbook 10         # the live demo (see below); Enter between weeks
+python demo.py                       # default: best eligible agent version (currently v8)
 python demo.py --no-pause --playbook 2   # straight through, with the human-written v2
 python history.py                    # instant lineage view, no LLM calls
-python improve.py --iterations 3     # self-improvement loop from v0 (~25–45 LLM calls)
+python improve.py --iterations 3     # self-improvement loop from v0 (~25–45 LLM calls); --start N to begin elsewhere
 python run.py                        # one scored run with the active playbook (log in runs/)
+python evaluate.py --scenario D      # held-out test in longview_holdout (B, C or D); --max-calls N to cap
 ```
 
 A demo makes about 10 LLM calls.
+
+### Recommended demo
+
+The live demo is **`python demo.py --playbook 10`**.
+
+- **v8** is the top scorer on scenario A, but its parameters drifted to their limits (start 0.65, boost 0.30) while tied scores were still accepted. It's overconfident: it puts about 0.95 on pricing after a single week.
+- **v10** is better calibrated (start 0.5, boost 0.20), still shows pricing believed and then superseded by distribution, and was written by the reflector with Raindrop evidence.
+- Without `--playbook`, `demo.py` picks the best eligible version: the highest-scoring agent version that wasn't rejected and whose rules pass the filters. That's currently v8.
 
 ---
 
