@@ -7,9 +7,18 @@ import json
 import re
 
 from llm import ask_json
+from raindrop_query import fetch_run_events, summarize_events
 from playbook import DEFAULT_PARAMETERS, GUARDRAILS, PARAMETER_RANGES, clamp_parameters, params, revise_playbook
 
 REGIONS_PATTERN = re.compile(r"\b(North|South|East|West)\b", re.I)
+# A specific metric (by field name or plain word) ...
+METRIC_PATTERN = re.compile(
+    r"\b(avg_price|distribution_points|promo_active|units|revenue|price|pricing|distribution|"
+    r"stores?|promos?|promotions?)\b", re.I)
+# ... together with a numeric threshold, e.g. "more than 10%", "> 0.15", "below 500".
+THRESHOLD_PATTERN = re.compile(r"\d+(\.\d+)?\s*(%|percent|pp\b)|[<>≤≥]\s*\d|\b(more|less|fewer|greater|"
+                               r"higher|lower|above|below|over|under|exceeds?|at least|at most)\s+(than\s+)?"
+                               r"[+-]?\d", re.I)
 MAX_RULES = 6
 
 GUARDRAIL_DOCS = {
@@ -42,9 +51,14 @@ Parameter values outside their allowed range are clamped.
 
 {SCORING_DOCS}
 
+raindrop_observability (when present) is production telemetry for the run's LLM calls: event
+counts, token cost, JSON retries, errors, user signals and the raw decision outputs.
+Use it as extra evidence, e.g. for wasted calls or unstable outputs.
+
 Diagnose what went wrong in the run, then propose a revised playbook. Rules must be general
 analytic principles that would hold for any region or dataset: never name a specific region,
-week, or the answer you suspect. Prefer few, sharp rules (at most {MAX_RULES}). Keep what works.
+week, or the answer you suspect, and never pair a metric with a numeric threshold
+(rules like that are rejected). Prefer few, sharp rules (at most {MAX_RULES}). Keep what works.
 
 Return: {{"diagnosis": "2-3 sentences",
  "rules": [{{"text": "...", "change": "kept|added|edited|removed", "justification": "one line"}}],
@@ -83,6 +97,9 @@ def reflect(run_doc, playbook, rejected=None):
     }
     if rejected:
         payload["previous_rejected_proposal"] = rejected
+    events, unavailable = fetch_run_events(run_doc)
+    payload["raindrop_observability"] = (summarize_events(events) if events
+                                         else {"unavailable": unavailable})
     proposal = ask_json(SYSTEM, json.dumps(payload, default=str), event="playbook_reflection",
                         playbook_version=playbook["version"])
 
@@ -94,6 +111,9 @@ def reflect(run_doc, playbook, rejected=None):
             continue
         if change != "removed" and REGIONS_PATTERN.search(text):
             changes.append(f"dropped proposed rule (names a region): {text}")
+            continue
+        if change != "removed" and METRIC_PATTERN.search(text) and THRESHOLD_PATTERN.search(text):
+            changes.append(f"dropped proposed rule (metric + numeric threshold): {text}")
             continue
         if change == "removed":
             changes.append(f"removed rule: {text} ({why})")
@@ -126,4 +146,5 @@ def reflect(run_doc, playbook, rejected=None):
 
     version = revise_playbook(rules, guardrails, author="agent", parent_version=playbook["version"],
                               changes=changes, note=proposal.get("diagnosis", ""), parameters=new_params)
-    return version, {"diagnosis": proposal.get("diagnosis", ""), "changes": changes}
+    raindrop_note = f"{len(events)} Raindrop events" if events else f"no Raindrop events ({unavailable})"
+    return version, {"diagnosis": proposal.get("diagnosis", ""), "changes": changes, "raindrop": raindrop_note}

@@ -66,6 +66,7 @@ def main():
         with console.status("Reflecting…"):
             version, proposal = reflect(current_run, current, rejected)
         reflect_calls += llm.stats["calls"] - before
+        console.print(f"[dim]Evidence: run score breakdown, belief histories, {proposal['raindrop']}[/]")
         console.print(f"[bold]Diagnosis:[/] {proposal['diagnosis']}")
         for c in proposal["changes"] or ["(no changes proposed)"]:
             console.print(f"  [cyan]•[/] {c}")

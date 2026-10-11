@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from agent import process_week
-from llm import track_run_scored
+from llm import SESSION_ID, track_run_scored
 from db import get_db
 from memory import get_beliefs, reset_memory
 from playbook import get_active_playbook
@@ -58,6 +58,7 @@ def build_run_summary(started_at, playbook, weeks, log_name):
         "score": breakdown["score"],
         "score_breakdown": breakdown,
         "log_file": f"runs/{log_name}",
+        "session_id": SESSION_ID,
     }
 
 

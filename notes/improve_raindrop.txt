@@ -1,0 +1,94 @@
+────────────────────────────────────────────────── Baseline: playbook v0 (no rules, guardrails off) ──────────────────────────────────────────────────
+  v0 scored 65.0  (found True, {'true_cause_found': 35, 'timeliness': 25.0, 'no_wrong_active': 0, 'no_non_causal': 0, 'no_duplicates': 5})  16 LLM 
+calls · runs/run_20261011_203515.txt
+───────────────────────────────────────────────────────────── Iteration 1: reflect on v0 ─────────────────────────────────────────────────────────────
+Evidence: run score breakdown, belief histories, 13 Raindrop events
+Diagnosis: The agent found the true driver (distribution loss) and became confident quickly, but it also created beliefs on units, which is a symptom 
+metric. Two of those beliefs were duplicates, and both stayed active at 0.99 and were scored as wrong. Supersede decisions also kept re-proposing 
+symptom claims, so wrong beliefs piled up beside the correct one.
+  • added rule: Only form hypotheses about causal levers (price, distribution coverage, promotion). Revenue and unit volume are symptoms of the 
+decline, not explanations of it, so never use them as the test metric. (Removes the symptom beliefs that cost points for non-causal and wrong active 
+beliefs.)
+  • added rule: A change in a symptom metric shows that something happened but not why. When volume falls, check which causal lever moved in the same 
+period and form the hypothesis on that lever. (Redirects the agent from 'units fell' to the underlying cause.)
+  • added rule: Before proposing a new belief, check whether an active belief already tests the same region and metric. If one does, update that 
+belief instead of creating another. (Prevents duplicate beliefs.)
+  • added rule: When two active beliefs conflict, or one is only a restatement of the observed decline, contradict or supersede the weaker one. Do not
+keep several explanations active for the same drop. (Reduces wrong beliefs still active at the end.)
+  • added rule: Judge a causal belief by whether its lever changed before or at the same time as the decline began, and whether the size of the change
+is consistent with the size of the decline. A lever that stayed flat cannot be the cause. (Gives a consistent test that favors the true driver and 
+speeds up confidence in it.)
+  • guardrail causal_metrics_only: off → on (Code-level block on units and revenue beliefs removes the symptom beliefs and the wrong active ones.)
+  • guardrail no_duplicate_metric_beliefs: off → on (Prevents duplicate beliefs in the same region and metric.)
+  • parameter reinforce_boost: 0.15 → 0.2 (Slightly faster confidence gain on supported causal beliefs improves timeliness.)
+Saved as playbook v10 (author: agent, parent v0)
+  v10 scored 91.7  (found True, {'true_cause_found': 35, 'timeliness': 16.7, 'no_wrong_active': 20, 'no_non_causal': 10, 'no_duplicates': 10})  8 LLM 
+calls · runs/run_20261011_203557.txt
+✔ Accepted v10: score 65.0 → 91.7
+────────────────────────────────────────────────────────────────────── Results ───────────────────────────────────────────────────────────────────────
+┏━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Version ┃ Author ┃ Changes                                                                     ┃ Score ┃ found_true_cause ┃ Outcome                ┃
+┡━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━┩
+│      v0 │ human  │ baseline: no rules, all guardrails off                                      │  65.0 │ yes              │ baseline               │
+├─────────┼────────┼─────────────────────────────────────────────────────────────────────────────┼───────┼──────────────────┼────────────────────────┤
+│     v10 │ agent  │ added rule: Only form hypotheses about causal levers (price, distribution   │  91.7 │ yes              │ accepted (65.0 → 91.7) │
+│         │        │ coverage, promotion). Revenue and unit volume are symptoms of the decline,  │       │                  │                        │
+│         │        │ not explanations of it, so never use them as the test metric. (Removes the  │       │                  │                        │
+│         │        │ symptom beliefs that cost points for non-causal and wrong active beliefs.)  │       │                  │                        │
+│         │        │ added rule: A change in a symptom metric shows that something happened but  │       │                  │                        │
+│         │        │ not why. When volume falls, check which causal lever moved in the same      │       │                  │                        │
+│         │        │ period and form the hypothesis on that lever. (Redirects the agent from     │       │                  │                        │
+│         │        │ 'units fell' to the underlying cause.)                                      │       │                  │                        │
+│         │        │ added rule: Before proposing a new belief, check whether an active belief   │       │                  │                        │
+│         │        │ already tests the same region and metric. If one does, update that belief   │       │                  │                        │
+│         │        │ instead of creating another. (Prevents duplicate beliefs.)                  │       │                  │                        │
+│         │        │ added rule: When two active beliefs conflict, or one is only a restatement  │       │                  │                        │
+│         │        │ of the observed decline, contradict or supersede the weaker one. Do not     │       │                  │                        │
+│         │        │ keep several explanations active for the same drop. (Reduces wrong beliefs  │       │                  │                        │
+│         │        │ still active at the end.)                                                   │       │                  │                        │
+│         │        │ added rule: Judge a causal belief by whether its lever changed before or at │       │                  │                        │
+│         │        │ the same time as the decline began, and whether the size of the change is   │       │                  │                        │
+│         │        │ consistent with the size of the decline. A lever that stayed flat cannot be │       │                  │                        │
+│         │        │ the cause. (Gives a consistent test that favors the true driver and speeds  │       │                  │                        │
+│         │        │ up confidence in it.)                                                       │       │                  │                        │
+│         │        │ guardrail causal_metrics_only: off → on (Code-level block on units and      │       │                  │                        │
+│         │        │ revenue beliefs removes the symptom beliefs and the wrong active ones.)     │       │                  │                        │
+│         │        │ guardrail no_duplicate_metric_beliefs: off → on (Prevents duplicate beliefs │       │                  │                        │
+│         │        │ in the same region and metric.)                                             │       │                  │                        │
+│         │        │ parameter reinforce_boost: 0.15 → 0.2 (Slightly faster confidence gain on   │       │                  │                        │
+│         │        │ supported causal beliefs improves timeliness.)                              │       │                  │                        │
+└─────────┴────────┴─────────────────────────────────────────────────────────────────────────────┴───────┴──────────────────┴────────────────────────┘
+                                                                   Final playbooks                                                                    
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ v10 (agent, score 91.7)                                                 ┃ v2 (human)                                                               ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ 1. Only form hypotheses about causal levers (price, distribution        │ 1. Hypotheses must name a driver metric that could cause the revenue     │
+│ coverage, promotion). Revenue and unit volume are symptoms of the       │ change, never revenue or units themselves.                               │
+│ decline, not explanations of it, so never use them as the test metric.  │ 2. Judge a belief by whether its driver metric is still off its week-1   │
+│ 2. A change in a symptom metric shows that something happened but not   │ baseline in the direction that explains lower revenue. Replace or        │
+│ why. When volume falls, check which causal lever moved in the same      │ contradict it only once its own metric no longer supports it (for        │
+│ period and form the hypothesis on that lever.                           │ example, the driver has returned to baseline while revenue stays down).  │
+│ 3. Before proposing a new belief, check whether an active belief        │ 3. Never create a belief that duplicates another active belief's metric  │
+│ already tests the same region and metric. If one does, update that      │ for the same region.                                                     │
+│ belief instead of creating another.                                     │                                                                          │
+│ 4. When two active beliefs conflict, or one is only a restatement of    │ Guardrails                                                               │
+│ the observed decline, contradict or supersede the weaker one. Do not    │ ✔ causal_metrics_only                                                    │
+│ keep several explanations active for the same drop.                     │ ✔ no_duplicate_metric_beliefs                                            │
+│ 5. Judge a causal belief by whether its lever changed before or at the  │                                                                          │
+│ same time as the decline began, and whether the size of the change is   │ Parameters                                                               │
+│ consistent with the size of the decline. A lever that stayed flat       │ initial_confidence = 0.5                                                 │
+│ cannot be the cause.                                                    │ reinforce_boost = 0.15                                                   │
+│                                                                         │ contradict_penalty = 0.4                                                 │
+│ Guardrails                                                              │ drop_threshold = 0.05                                                    │
+│ ✔ causal_metrics_only                                                   │                                                                          │
+│ ✔ no_duplicate_metric_beliefs                                           │                                                                          │
+│                                                                         │                                                                          │
+│ Parameters                                                              │                                                                          │
+│ initial_confidence = 0.5                                                │                                                                          │
+│ reinforce_boost = 0.2                                                   │                                                                          │
+│ contradict_penalty = 0.4                                                │                                                                          │
+│ drop_threshold = 0.05                                                   │                                                                          │
+└─────────────────────────────────────────────────────────────────────────┴──────────────────────────────────────────────────────────────────────────┘
+
+LLM usage: 25 calls (24 in runs, 1 reflections) · tokens in 33,863 / out 4,740
+Active playbook restored to v2. To adopt the agent's version: playbook.set_active_version(<n>).
