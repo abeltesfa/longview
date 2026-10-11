@@ -1,0 +1,88 @@
+──────────────────────────────────────────────────────────────── Baseline: playbook v10 (agent) ────────────────────────────────────────────────────────────────
+  v10 scored 91.7  (found True, {'true_cause_found': 35, 'timeliness': 16.7, 'no_wrong_active': 20, 'no_non_causal': 10, 'no_duplicates': 10})  8 LLM calls · 
+runs/run_20261011_211818.txt
+───────────────────────────────────────────────────────────────── Iteration 1: reflect on v10 ──────────────────────────────────────────────────────────────────
+Evidence: run score breakdown, belief histories, 3 Raindrop events
+Diagnosis: The run found the true driver (price) and ended with no wrong active beliefs, but lost timeliness points. The agent spent weeks 2-3 reinforcing a 
+distribution belief to 0.9 because it moved with the first drop, and only created the price belief in week 4 after distribution recovered. It also did not test 
+price in week 3 when price rose, because the no-duplicate guard and the early belief focus let the first plausible lever absorb attention.
+  • added rule: Each week, check every causal lever for movement, not only the one already believed. When a different lever changes during an ongoing decline, 
+create a hypothesis on it immediately instead of waiting for the current explanation to fail. (Price rose in week 3 but was only tested in week 4, costing 
+timeliness.)
+  • added rule: A single lever can explain only the part of the decline that it coincides with. If the decline continues or deepens after that lever stabilizes 
+or recovers, treat the lever as incomplete and look for another that moved later, rather than reinforcing further. (Distribution was reinforced to 0.9 even 
+though revenue kept falling after the lever stopped moving.)
+  • edited rule: Judge a causal belief by whether its lever changed before or at the same time as the decline began, and whether the size and direction of the 
+change is consistent with the size of the decline. A lever that stayed flat or moved the wrong way cannot be the cause. (Adds direction check; helps reject 
+wrong levers faster.)
+  • parameter reinforce_boost: 0.2 → 0.15 (Slower escalation keeps partially-explanatory beliefs from reaching high confidence prematurely.)
+  • parameter drop_threshold: 0.05 → 0.04 (Flag declines slightly earlier to improve timeliness.)
+Saved as playbook v11 (author: agent, parent v10)
+  v11 scored 100.0  (found True, {'true_cause_found': 35, 'timeliness': 25.0, 'no_wrong_active': 20, 'no_non_causal': 10, 'no_duplicates': 10})  8 LLM calls · 
+runs/run_20261011_211846.txt
+✔ Accepted v11: score 91.7 → 100.0
+─────────────────────────────────────────────────────────────────────────── Results ────────────────────────────────────────────────────────────────────────────
+┏━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Version ┃ Author ┃ Changes                                                                              ┃ Score ┃ found_true_cause ┃ Outcome                 ┃
+┡━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│     v10 │ agent  │ baseline: The agent found the true driver (distribution loss) and became confident   │  91.7 │ yes              │ baseline                │
+│         │        │ quickly, but it also created beliefs on units, which is a symptom metric. Two of     │       │                  │                         │
+│         │        │ those beliefs were duplicates, and b                                                 │       │                  │                         │
+├─────────┼────────┼──────────────────────────────────────────────────────────────────────────────────────┼───────┼──────────────────┼─────────────────────────┤
+│     v11 │ agent  │ added rule: Each week, check every causal lever for movement, not only the one       │ 100.0 │ yes              │ accepted (91.7 → 100.0) │
+│         │        │ already believed. When a different lever changes during an ongoing decline, create a │       │                  │                         │
+│         │        │ hypothesis on it immediately instead of waiting for the current explanation to fail. │       │                  │                         │
+│         │        │ (Price rose in week 3 but was only tested in week 4, costing timeliness.)            │       │                  │                         │
+│         │        │ added rule: A single lever can explain only the part of the decline that it          │       │                  │                         │
+│         │        │ coincides with. If the decline continues or deepens after that lever stabilizes or   │       │                  │                         │
+│         │        │ recovers, treat the lever as incomplete and look for another that moved later,       │       │                  │                         │
+│         │        │ rather than reinforcing further. (Distribution was reinforced to 0.9 even though     │       │                  │                         │
+│         │        │ revenue kept falling after the lever stopped moving.)                                │       │                  │                         │
+│         │        │ edited rule: Judge a causal belief by whether its lever changed before or at the     │       │                  │                         │
+│         │        │ same time as the decline began, and whether the size and direction of the change is  │       │                  │                         │
+│         │        │ consistent with the size of the decline. A lever that stayed flat or moved the wrong │       │                  │                         │
+│         │        │ way cannot be the cause. (Adds direction check; helps reject wrong levers faster.)   │       │                  │                         │
+│         │        │ parameter reinforce_boost: 0.2 → 0.15 (Slower escalation keeps partially-explanatory │       │                  │                         │
+│         │        │ beliefs from reaching high confidence prematurely.)                                  │       │                  │                         │
+│         │        │ parameter drop_threshold: 0.05 → 0.04 (Flag declines slightly earlier to improve     │       │                  │                         │
+│         │        │ timeliness.)                                                                         │       │                  │                         │
+└─────────┴────────┴──────────────────────────────────────────────────────────────────────────────────────┴───────┴──────────────────┴─────────────────────────┘
+                                                                        Final playbooks                                                                         
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ v11 (agent, score 100.0)                                                      ┃ v2 (human)                                                                   ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ 1. Only form hypotheses about causal levers (price, distribution coverage,    │ 1. Hypotheses must name a driver metric that could cause the revenue change, │
+│ promotion). Revenue and unit volume are symptoms of the decline, not          │ never revenue or units themselves.                                           │
+│ explanations of it, so never use them as the test metric.                     │ 2. Judge a belief by whether its driver metric is still off its week-1       │
+│ 2. Each week, check every causal lever for movement, not only the one already │ baseline in the direction that explains lower revenue. Replace or contradict │
+│ believed. When a different lever changes during an ongoing decline, create a  │ it only once its own metric no longer supports it (for example, the driver   │
+│ hypothesis on it immediately instead of waiting for the current explanation   │ has returned to baseline while revenue stays down).                          │
+│ to fail.                                                                      │ 3. Never create a belief that duplicates another active belief's metric for  │
+│ 3. Before proposing a new belief, check whether an active belief already      │ the same region.                                                             │
+│ tests the same region and metric. If one does, update that belief instead of  │                                                                              │
+│ creating another.                                                             │ Guardrails                                                                   │
+│ 4. A single lever can explain only the part of the decline that it coincides  │ ✔ causal_metrics_only                                                        │
+│ with. If the decline continues or deepens after that lever stabilizes or      │ ✔ no_duplicate_metric_beliefs                                                │
+│ recovers, treat the lever as incomplete and look for another that moved       │                                                                              │
+│ later, rather than reinforcing further.                                       │ Parameters                                                                   │
+│ 5. When two active beliefs conflict, or one is only a restatement of the      │ initial_confidence = 0.5                                                     │
+│ observed decline, contradict or supersede the weaker one. Do not keep several │ reinforce_boost = 0.15                                                       │
+│ explanations active for the same drop.                                        │ contradict_penalty = 0.4                                                     │
+│ 6. Judge a causal belief by whether its lever changed before or at the same   │ drop_threshold = 0.05                                                        │
+│ time as the decline began, and whether the size and direction of the change   │                                                                              │
+│ is consistent with the size of the decline. A lever that stayed flat or moved │                                                                              │
+│ the wrong way cannot be the cause.                                            │                                                                              │
+│                                                                               │                                                                              │
+│ Guardrails                                                                    │                                                                              │
+│ ✔ causal_metrics_only                                                         │                                                                              │
+│ ✔ no_duplicate_metric_beliefs                                                 │                                                                              │
+│                                                                               │                                                                              │
+│ Parameters                                                                    │                                                                              │
+│ initial_confidence = 0.5                                                      │                                                                              │
+│ reinforce_boost = 0.15                                                        │                                                                              │
+│ contradict_penalty = 0.4                                                      │                                                                              │
+│ drop_threshold = 0.04                                                         │                                                                              │
+└───────────────────────────────────────────────────────────────────────────────┴──────────────────────────────────────────────────────────────────────────────┘
+
+LLM usage: 17 calls (16 in runs, 1 reflections) · tokens in 23,248 / out 3,869
+Active playbook restored to v10. To adopt the agent's version: playbook.set_active_version(<n>).

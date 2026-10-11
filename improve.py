@@ -4,7 +4,7 @@ Starts from the blank v0 playbook. Each iteration: run weeks 2-6, score the run,
 save a new agent-written playbook version, and run again. A candidate is accepted only if
 its score is strictly higher; on a tie or a drop the parent is kept and the reason is logged.
 
-Usage: python improve.py [--iterations N]
+Usage: python improve.py [--iterations N] [--start VERSION]
 """
 import argparse
 
@@ -43,16 +43,18 @@ def _playbook_cell(pb):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--iterations", type=int, default=3)
+    parser.add_argument("--start", type=int, default=0, help="playbook version to improve from (default v0)")
     args = parser.parse_args()
 
     llm.usage_log = lambda msg: None
     ensure_seed_versions()
     original_active = get_active_playbook()["version"]
 
-    console.rule("[bold]Baseline: playbook v0 (no rules, guardrails off)")
-    current = get_playbook(0)
-    current_run = run_version(0)
-    rows = [(0, "human", "baseline: no rules, all guardrails off", current_run["score"],
+    current = get_playbook(args.start)
+    console.rule(f"[bold]Baseline: playbook v{args.start} ({current.get('author')})")
+    current_run = run_version(args.start)
+    rows = [(args.start, current.get("author", "?"), f"baseline: {current.get('note') or 'starting version'}"[:200],
+             current_run["score"],
              current_run["found_true_cause"], "baseline")]
     rejected = None
     reflect_calls = 0

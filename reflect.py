@@ -8,6 +8,8 @@ import json
 from llm import ask_json
 from raindrop_query import fetch_run_events, summarize_events
 from rule_filters import rule_violation
+
+MAX_RULES = 6
 from playbook import DEFAULT_PARAMETERS, GUARDRAILS, PARAMETER_RANGES, clamp_parameters, params, revise_playbook
 
 

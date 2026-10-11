@@ -14,7 +14,6 @@ METRIC_PATTERN = re.compile(
 THRESHOLD_PATTERN = re.compile(r"\d+(\.\d+)?\s*(%|percent|pp\b)|[<>≤≥]\s*\d|\b(more|less|fewer|greater|"
                                r"higher|lower|above|below|over|under|exceeds?|at least|at most)\s+(than\s+)?"
                                r"[+-]?\d", re.I)
-MAX_RULES = 6
 
 
 def rule_violation(text):

@@ -1,0 +1,124 @@
+Run started 2026-10-11 21:19:20 UTC, playbook v11 (agent)
+Memory reset.
+
+======================================================================
+WEEK 2
+======================================================================
+  East   revenue     57,220  (-1.6% WoW)
+  North  revenue     57,666  (-0.2% WoW)
+  South  revenue     57,549  (-0.5% WoW)
+  West   revenue     53,244  (-8.1% WoW)
+
+--- FLAGGED: West revenue -8.1% WoW ---
+  No active beliefs; asking LLM for hypotheses:
+    [llm claude-sonnet-5-5] tokens in=668 out=399
+    + [avg_price] Price increases are suppressing West demand.  (conf 0.5)
+    + [distribution_points] Lost distribution coverage is reducing West sales reach.  (conf 0.5)
+    + [promo_active] A promotion ended, removing the earlier sales lift.  (conf 0.5)
+
+  Belief: "Price increases are suppressing West demand."  (conf 0.50)
+    data checked [avg_price]: wk1=2.82  wk2=3.06
+    revenue for context:  wk1=57,959.81  wk2=53,244.08
+    [llm claude-sonnet-5-5] tokens in=1206 out=134
+    → REINFORCE  conf 0.50 → 0.65
+      reason: West avg_price rose from 2.82 to 3.06 (+8.5%) in the same week revenue fell 8.1% (57,959.81 to 53,244.08). Distribution held at 950 and no promo was active, so price is the only lever that moved, and its size and direction are consistent with the decline.
+
+  Belief: "Lost distribution coverage is reducing West sales reach."  (conf 0.50)
+    data checked [distribution_points]: wk1=950  wk2=950
+    revenue for context:  wk1=57,959.81  wk2=53,244.08
+    [llm claude-sonnet-5-5] tokens in=1185 out=161
+    → CONTRADICT (replacement already covered by an active belief)  conf 0.50 → 0.10
+      reason: Distribution points were flat at 950 in both weeks, so coverage loss cannot explain the revenue drop from 57,960 to 53,244 (about -8%). Avg price rose from 2.82 to 3.06 (about +8.5%) in the same week the decline began, which fits the drop; promo stayed inactive.
+
+  Belief: "A promotion ended, removing the earlier sales lift."  (conf 0.50)
+    data checked [promo_active]: wk1=no  wk2=no
+    revenue for context:  wk1=57,959.81  wk2=53,244.08
+    [llm claude-sonnet-5-5] tokens in=1190 out=152
+    → CONTRADICT (replacement already covered by an active belief)  conf 0.50 → 0.10
+      reason: promo_active was false in both weeks 1 and 2, so no promotion ended and the belief is refuted. Average price rose from 2.82 to 3.06 (+8.5%) while distribution stayed flat at 950, and the price increase coincides with the ~8.1% revenue drop.
+
+======================================================================
+WEEK 3
+======================================================================
+  East   revenue     58,418  (+2.1% WoW)
+  North  revenue     57,240  (-0.7% WoW)
+  South  revenue     58,133  (+1.0% WoW)
+  West   revenue     45,335  (-14.9% WoW)
+
+--- FLAGGED: West revenue -14.9% WoW ---
+  1 active belief(s) in memory; testing against new data.
+
+  Belief: "Price increases are suppressing West demand."  (conf 0.65)
+    data checked [avg_price]: wk1=2.82  wk2=3.06  wk3=3.06
+    revenue for context:  wk1=57,959.81  wk2=53,244.08  wk3=45,335.46
+    [llm claude-sonnet-5-5] tokens in=1398 out=182
+    → SUPERSEDE  old conf 0.65 → superseded
+      new belief: [distribution_points] "West distribution loss (950 to 807 points) is driving the deepening revenue decline."  (conf 0.60)
+      reason: Price rose 8.5% in week 2 and then stayed flat at 3.06 in week 3, yet revenue fell a further 14.9% (53,244 to 45,335). Distribution dropped from 950 to 807 (-15%) in week 3, which matches the deepening decline, so price is incomplete and coverage is the better explanation.
+
+======================================================================
+WEEK 4
+======================================================================
+  East   revenue     57,234  (-2.0% WoW)
+  North  revenue     57,178  (-0.1% WoW)
+  South  revenue     58,198  (+0.1% WoW)
+  West   revenue     42,552  (-6.1% WoW)
+  intervention recorded: West promo in week 4
+
+--- FLAGGED: West revenue -6.1% WoW ---
+  1 active belief(s) in memory; testing against new data.
+
+  Belief: "West distribution loss (950 to 807 points) is driving the deepening revenue decline."  (conf 0.60)
+    data checked [distribution_points]: wk1=950  wk2=950  wk3=807  wk4=687
+    revenue for context:  wk1=57,959.81  wk2=53,244.08  wk3=45,335.46  wk4=42,551.52
+    [llm claude-sonnet-5-5] tokens in=1371 out=142
+    → REINFORCE  conf 0.60 → 0.75
+      reason: Distribution fell from 950 to 807 to 687 (-28% over weeks 3-4), and revenue kept sliding (45,335 to 42,552) as coverage shrank. Price fell back to 2.85 and a promo began in week 4, and revenue still declined, so those levers are not offsetting the coverage loss.
+
+======================================================================
+WEEK 5
+======================================================================
+  East   revenue     57,773  (+0.9% WoW)
+  North  revenue     57,645  (+0.8% WoW)
+  South  revenue     57,278  (-1.6% WoW)
+  West   revenue     35,903  (-15.6% WoW)
+
+--- FLAGGED: West revenue -15.6% WoW ---
+  1 active belief(s) in memory; testing against new data.
+
+  Belief: "West distribution loss (950 to 807 points) is driving the deepening revenue decline."  (conf 0.75)
+    data checked [distribution_points]: wk1=950  wk2=950  wk3=807  wk4=687  wk5=584
+    revenue for context:  wk1=57,959.81  wk2=53,244.08  wk3=45,335.46  wk4=42,551.52  wk5=35,902.95
+    [llm claude-sonnet-5-5] tokens in=1571 out=135
+    → REINFORCE  conf 0.75 → 0.90
+      reason: Distribution fell again from 687 to 584 in week 5, a 38.5% cumulative drop from 950, and revenue fell a further 15.6% (42,552 to 35,903) while price stayed flat at about 2.84 and the promo ended. The coverage loss began in week 3, coinciding with the deepening decline, and it continues to track revenue.
+
+======================================================================
+WEEK 6
+======================================================================
+  East   revenue     57,086  (-1.2% WoW)
+  North  revenue     57,698  (+0.1% WoW)
+  South  revenue     57,028  (-0.4% WoW)
+  West   revenue     30,119  (-16.1% WoW)
+
+--- FLAGGED: West revenue -16.1% WoW ---
+  1 active belief(s) in memory; testing against new data.
+
+  Belief: "West distribution loss (950 to 807 points) is driving the deepening revenue decline."  (conf 0.90)
+    data checked [distribution_points]: wk1=950  wk2=950  wk3=807  wk4=687  wk5=584  wk6=497
+    revenue for context:  wk1=57,959.81  wk2=53,244.08  wk3=45,335.46  wk4=42,551.52  wk5=35,902.95  wk6=30,118.76
+    [llm claude-sonnet-5-5] tokens in=1781 out=119
+    → REINFORCE  conf 0.90 → 0.99
+      reason: Distribution fell again from 584 to 497 in week 6, a 47.7% cumulative drop from 950 since week 3. Revenue fell a further 16.1% (35,903 to 30,119) while price held at about 2.82 and no promo was active, so no other lever offsets or explains the continued decline.
+
+======================================================================
+FINAL BELIEFS
+======================================================================
+  West   superseded   0.25  [avg_price] Price increases are suppressing West demand.
+  West   contradicted 0.10  [distribution_points] Lost distribution coverage is reducing West sales reach.
+  West   contradicted 0.10  [promo_active] A promotion ended, removing the earlier sales lift.
+  West   active       0.99  [distribution_points] West distribution loss (950 to 807 points) is driving the deepening revenue decline.
+
+found_true_cause: True
+score: 100.0  {'true_cause_found': 35, 'timeliness': 25.0, 'no_wrong_active': 20, 'no_non_causal': 10, 'no_duplicates': 10}
+Saved log to runs/run_20261011_211920.txt and summary to runs collection.

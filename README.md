@@ -164,6 +164,32 @@ Playbooks were learned and tuned on scenario A only. To check whether they carry
 - **v0 was the fastest to find price.** With no duplicate guard it carried several parallel beliefs, and one of them switched to price in **week 3**. It still lost points for clutter: symptom beliefs, duplicates, and in one run a wrong belief left active.
 - **The trade-off the guardrails make:** a cleaner memory, but a slower switch when the first guess is still partly true. The self-improvement loop can't see this, because it trained only on scenario A, where the guardrails cost nothing.
 
+### Learning from scenario C (v10 → v11)
+
+One improve iteration started from v10, ran on scenario C in `longview_holdout`. **The agent accepted a new version, v11** (91.7 → 100 on C).
+
+What v11 changed, in the agent's words:
+- **Added:** "Each week, check every causal lever for movement, not only the one already believed. When a different lever changes during an ongoing decline, create a hypothesis on it immediately instead of waiting for the current explanation to fail."
+- **Added:** "A single lever can explain only the part of the decline that it coincides with. If the decline continues or deepens after that lever stabilizes or recovers, treat the lever as incomplete and look for another that moved later."
+- **Edited** the causal-judgment rule to also check the *direction* of a lever's change.
+- **Parameters:** reinforce_boost 0.2 → 0.15, drop_threshold 0.05 → 0.04.
+
+Its diagnosis matches what I found in the logs by hand: it had reinforced distribution through week 3 even though price had moved.
+
+| Check | Run | Score | Confident in true cause |
+|---|---|---:|---|
+| v10 on C (baseline) | 1 | 91.7 | week 5 |
+| v11 on C | 1 | 100.0 | week 4 |
+| v11 on A (regression check) | 1 | 100.0 | week 4 (superseded pricing in week 3) |
+
+*25 LLM calls (17 for the improve iteration, 8 for the A check). Output: `notes/improve_holdout_c_from_v10.txt` and the run logs in `runs/`.*
+
+**Read this carefully:**
+- **C is no longer held out for v11.** It was trained on C, so 100 on C shows that the loop can fix a failure it observed. It doesn't show generalization. A fresh scenario would be needed for that.
+- **No regression on A, from one run.** v11 scored 100 on A. That's not proof it's better than v10 there: v10 has scored both 91.7 and 100 on A across runs.
+- **Only part of the Raindrop evidence arrived.** The reflector received 3 of the run's 8 events, probably because the rest hadn't been processed yet when it queried.
+- **v11 exists only in `longview_holdout`.** It isn't in the demo database's playbook collection, and the demo still uses the main database's versions.
+
 ### Caveats
 - **Small sample:** 2 runs per version per held-out scenario; v10's 4.2-point gap on C comes from a single run.
 - **Hand-designed scenarios:** both were written by me. B turned out to be easy (no misleading guess backed by a moving metric). C was harder and separated the playbooks.
