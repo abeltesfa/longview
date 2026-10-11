@@ -153,10 +153,23 @@ def version_scores():
     return latest
 
 
+def excluded_agent_versions():
+    """{version: reason} for agent versions that can't be "best": rejected, or rules failing the filters."""
+    from rule_filters import playbook_violations  # local import: rule_filters is standalone, keep playbook light
+    out = {}
+    for p in _playbook().find({"author": "agent"}):
+        if p.get("accepted") is False:
+            out[p["version"]] = "rejected by improve loop"
+        elif violations := playbook_violations(p):
+            out[p["version"]] = "fails rule filters (" + "; ".join(violations) + ")"
+    return out
+
+
 def best_agent_version():
-    """Highest-scoring agent-written version that was not rejected (newest wins ties), or None."""
+    """Highest-scoring eligible agent version (newest wins ties), or None. See excluded_agent_versions."""
     scores = version_scores()
-    agent_versions = [p["version"] for p in _playbook().find({"author": "agent", "accepted": {"$ne": False}})]
+    excluded = excluded_agent_versions()
+    agent_versions = [p["version"] for p in _playbook().find({"author": "agent"}) if p["version"] not in excluded]
     scored = [(scores[v]["score"], v) for v in agent_versions if v in scores]
     return max(scored)[1] if scored else None
 

@@ -5,8 +5,8 @@ Usage: python history.py
 from rich.console import Console
 from rich.table import Table
 
-from playbook import (GUARDRAILS, _playbook, best_agent_version, ensure_seed_versions, get_playbook,
-                      params, version_scores)
+from playbook import (GUARDRAILS, _playbook, best_agent_version, ensure_seed_versions, excluded_agent_versions,
+                      get_playbook, params, version_scores)
 
 HUMAN_REFERENCE_VERSION = 2
 console = Console()
@@ -53,6 +53,7 @@ def main():
     by_version = {p["version"]: p for p in playbooks}
     scores = version_scores()
     best = best_agent_version()
+    excluded = excluded_agent_versions()
 
     table = Table(title="Playbook lineage", title_justify="left", show_lines=True)
     for col, kw in [("Version", {"justify": "right"}), ("Author", {}), ("Parent", {"justify": "right"}),
@@ -62,17 +63,22 @@ def main():
         run = scores.get(pb["version"])
         v = pb["version"]
         label = f"v{v}" + (" ★" if v == best else "") + (" (active)" if pb.get("active") else "")
+        summary = _summary(pb, by_version)
+        if v in excluded:
+            label += " ✘"
+            summary += f"\n[red]excluded: {excluded[v]}[/]"
         table.add_row(
             label,
             f"[cyan]{pb.get('author')}" if pb.get("author") == "agent" else pb.get("author", "?"),
             "–" if pb.get("parent_version") is None else f"v{pb['parent_version']}",
             "–" if run is None else f"{run['score']}",
             "–" if run is None else ("[green]yes" if run["found_true_cause"] else "[red]no"),
-            _summary(pb, by_version),
-            style="bold" if v == best else "",
+            summary,
+            style="bold" if v == best else ("dim" if v in excluded else ""),
         )
     console.print(table)
-    console.print("[dim]Score = latest scored run of that version. ★ = best agent version.[/]\n")
+    console.print("[dim]Score = latest scored run of that version. ★ = best eligible agent version. "
+                  "✘ = excluded from best (rejected, or rules too specific).[/]\n")
 
     if best is None:
         console.print("[yellow]No scored agent-written versions yet. Run improve.py.[/]")

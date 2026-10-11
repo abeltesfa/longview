@@ -4,22 +4,12 @@ The reflector sees the score breakdown, belief histories and current playbook, n
 planted answer. Rules that name a specific region are dropped so the playbook stays general.
 """
 import json
-import re
 
 from llm import ask_json
 from raindrop_query import fetch_run_events, summarize_events
+from rule_filters import rule_violation
 from playbook import DEFAULT_PARAMETERS, GUARDRAILS, PARAMETER_RANGES, clamp_parameters, params, revise_playbook
 
-REGIONS_PATTERN = re.compile(r"\b(North|South|East|West)\b", re.I)
-# A specific metric (by field name or plain word) ...
-METRIC_PATTERN = re.compile(
-    r"\b(avg_price|distribution_points|promo_active|units|revenue|price|pricing|distribution|"
-    r"stores?|promos?|promotions?)\b", re.I)
-# ... together with a numeric threshold, e.g. "more than 10%", "> 0.15", "below 500".
-THRESHOLD_PATTERN = re.compile(r"\d+(\.\d+)?\s*(%|percent|pp\b)|[<>≤≥]\s*\d|\b(more|less|fewer|greater|"
-                               r"higher|lower|above|below|over|under|exceeds?|at least|at most)\s+(than\s+)?"
-                               r"[+-]?\d", re.I)
-MAX_RULES = 6
 
 GUARDRAIL_DOCS = {
     "causal_metrics_only": "Code rejects any belief whose test metric is not a causal driver "
@@ -109,11 +99,9 @@ def reflect(run_doc, playbook, rejected=None):
         why = r.get("justification", "")
         if not text:
             continue
-        if change != "removed" and REGIONS_PATTERN.search(text):
-            changes.append(f"dropped proposed rule (names a region): {text}")
-            continue
-        if change != "removed" and METRIC_PATTERN.search(text) and THRESHOLD_PATTERN.search(text):
-            changes.append(f"dropped proposed rule (metric + numeric threshold): {text}")
+        violation = rule_violation(text) if change != "removed" else None
+        if violation:
+            changes.append(f"dropped proposed rule ({violation}): {text}")
             continue
         if change == "removed":
             changes.append(f"removed rule: {text} ({why})")
