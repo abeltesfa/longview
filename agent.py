@@ -1,7 +1,7 @@
 """Weekly agent: flag revenue drops, form hypotheses, test them against data, update memory."""
 import json
 
-from analysis import get_metric_series, promo_regions, region_week_summary
+from analysis import METRICS, get_metric_series, promo_regions, region_week_summary
 from llm import ask_json
 from memory import (
     ACTIVE,
@@ -14,7 +14,7 @@ from memory import (
     reinforce,
     supersede,
 )
-from playbook import get_active_playbook, rules_text
+from playbook import get_active_playbook, guard, rules_text
 
 DROP_THRESHOLD = -5.0  # % week-over-week revenue change that triggers investigation
 NEW_HYPOTHESIS_CONFIDENCE = 0.5
@@ -61,6 +61,17 @@ def _silent(*args, **kwargs):
     pass
 
 
+def _allowed_metrics(playbook):
+    """Metrics a belief may test: causal ones only if that guardrail is on, else any metric."""
+    if guard(playbook, "causal_metrics_only"):
+        return playbook["causal_metrics"]
+    return METRICS
+
+
+def _active_metrics(region, exclude_id=None):
+    return {b["metric"] for b in get_beliefs(region=region, status=ACTIVE) if b["_id"] != exclude_id}
+
+
 def _record_promos(week, say, events):
     for region in promo_regions(week):
         if any(i["week"] == week for i in get_interventions(region)):
@@ -73,7 +84,7 @@ def _record_promos(week, say, events):
 
 def _propose_hypotheses(region, week, playbook, say, events):
     revenue = get_metric_series(region, "revenue", week)
-    allowed = playbook["causal_metrics"]
+    allowed = _allowed_metrics(playbook)
     result = ask_json(HYPOTHESIS_SYSTEM.format(rules=rules_text(playbook)), json.dumps({
         "region": region,
         "weekly_revenue": revenue,
@@ -81,7 +92,10 @@ def _propose_hypotheses(region, week, playbook, say, events):
     }))
     for h in result.get("hypotheses", [])[:3]:
         if h.get("metric") not in allowed:
-            say(f"    skipped hypothesis with non-causal metric {h.get('metric')!r}: {h.get('claim')}")
+            say(f"    skipped hypothesis with disallowed metric {h.get('metric')!r}: {h.get('claim')}")
+            continue
+        if guard(playbook, "no_duplicate_metric_beliefs") and h["metric"] in _active_metrics(region):
+            say(f"    skipped duplicate hypothesis on {h['metric']}: {h.get('claim')}")
             continue
         create_belief(region, h["metric"], h["claim"], NEW_HYPOTHESIS_CONFIDENCE, week,
                       reason=h.get("rationale", "initial hypothesis"))
@@ -91,10 +105,10 @@ def _propose_hypotheses(region, week, playbook, say, events):
 
 def _evaluate(belief, week, interventions, use_memory, playbook, say, events):
     region, metric = belief["region"], belief["metric"]
-    allowed = playbook["causal_metrics"]
+    allowed = _allowed_metrics(playbook)
     series = get_metric_series(region, metric, week)
     revenue = get_metric_series(region, "revenue", week)
-    others = {m: get_metric_series(region, m, week) for m in allowed if m != metric}
+    others = {m: get_metric_series(region, m, week) for m in allowed if m not in (metric, "revenue")}
     say(f"\n  Belief: \"{belief['claim']}\"  (conf {belief['confidence']:.2f})")
     say(f"    data checked [{metric}]: {_fmt_series(series)}")
     say(f"    revenue for context:  {_fmt_series(revenue)}")
@@ -131,8 +145,8 @@ def _evaluate(belief, week, interventions, use_memory, playbook, say, events):
         new_metric = decision.get("new_metric")
         if new_metric not in allowed:
             new_metric = None
-        taken = {b["metric"] for b in get_beliefs(region=region, status=ACTIVE) if b["_id"] != bid}
-        if (new_metric or metric) in taken:
+        if (guard(playbook, "no_duplicate_metric_beliefs")
+                and (new_metric or metric) in _active_metrics(region, exclude_id=bid)):
             # Another active belief already covers that driver: retire this one instead of duplicating.
             event.update(action="CONTRADICT", new_confidence=contradict(bid, week, reason))
             say(f"    → CONTRADICT (replacement already covered by an active belief)  "

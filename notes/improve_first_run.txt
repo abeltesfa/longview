@@ -1,0 +1,159 @@
+────────────────────────────────────────────────── Baseline: playbook v0 (no rules, guardrails off) ──────────────────────────────────────────────────
+  v0 scored 73.8  (found True, {'true_cause_found': 35, 'timeliness': 18.8, 'no_wrong_active': 20, 'no_non_causal': 0, 'no_duplicates': 0})  16 LLM 
+calls · runs/run_20261011_194416.txt
+───────────────────────────────────────────────────────────── Iteration 1: reflect on v0 ─────────────────────────────────────────────────────────────
+Diagnosis: The agent found the true driver (distribution_points) and became confident by week 4, one week after it first moved. It lost points by 
+creating symptom beliefs on units (2 beliefs) and by creating three duplicate active beliefs on distribution_points. It also spawned a belief on every
+candidate metric each week, which cluttered the belief set.
+  • added rule: Form hypotheses only about causal drivers (price, distribution/availability, promotion). Revenue and units are outcomes to be 
+explained, never the claim's test metric. (Removes the units-based beliefs that cost 10 points.)
+  • added rule: Before creating a belief, check whether an active belief already covers the same region and metric. If so, reinforce, edit, or 
+supersede that belief rather than opening a new one. (Prevents the duplicate distribution_points beliefs that cost 10 points.)
+  • added rule: When a driver metric moves in step with the outcome (similar percentage change in the same week), treat it as the leading explanation 
+and test it at once. Check the driver metrics first, before any demand-based story. (Speeds up identifying the true driver, which improves 
+timeliness.)
+  • added rule: When evidence contradicts a belief, supersede it with a refined claim on the correct driver metric. Do not leave several overlapping 
+claims active. (Keeps the active belief set clean and avoids wrong active beliefs.)
+  • added rule: Raise confidence quickly when a driver metric's move matches the outcome's size and timing across consecutive weeks. Do not wait for 
+many weeks of confirmation. (Earlier confidence on the true driver improves the timeliness score.)
+  • guardrail causal_metrics_only: off → on (Blocks symptom beliefs on units or revenue, which cost 10 points.)
+  • guardrail no_duplicate_metric_beliefs: off → on (Blocks the repeated distribution_points beliefs that cost 10 points.)
+Saved as playbook v3 (author: agent, parent v0)
+  v3 scored 93.8  (found True, {'true_cause_found': 35, 'timeliness': 18.8, 'no_wrong_active': 20, 'no_non_causal': 10, 'no_duplicates': 10})  8 LLM 
+calls · runs/run_20261011_194458.txt
+✔ Accepted v3: score 73.8 → 93.8
+───────────────────────────────────────────────────────────── Iteration 2: reflect on v3 ─────────────────────────────────────────────────────────────
+Diagnosis: The run found the true driver (distribution) and ended with no wrong active beliefs, no symptom-metric beliefs and no duplicates. 
+Timeliness was the only loss: the agent first blamed price because it matched week 2 revenue, opened parallel single-week hypotheses on every driver, 
+and only reached high confidence on distribution in week 4 even though the driver first moved in week 3.
+  • edited rule: Each week, compare every driver metric's percentage change with the outcome's change in that same week. Treat the driver whose size 
+and timing match as the leading explanation, and test it first. Judge each week's move on its own metric rather than carrying forward last week's 
+explanation. (Makes the per-week check explicit, so a new driver move is picked up as soon as it appears.)
+  • edited rule: Raise confidence by a large step (at least +0.2) when a driver's move matches the outcome in size and timing, and again when the 
+match repeats in the next week. Reach 0.7 within two matching observations. (Gives a concrete confidence step so confidence passes 0.7 sooner and 
+timeliness improves.)
+  • added rule: A single-week match between one driver and the outcome is only a candidate. Confirm it by checking that the other drivers did not move
+in that week, and open competing hypotheses only for drivers that actually changed. (Reduces wasted hypotheses on drivers that were flat and keeps 
+attention on the driver that moved.)
+Saved as playbook v4 (author: agent, parent v3)
+  v4 scored 93.8  (found True, {'true_cause_found': 35, 'timeliness': 18.8, 'no_wrong_active': 20, 'no_non_causal': 10, 'no_duplicates': 10})  9 LLM 
+calls · runs/run_20261011_194522.txt
+✔ Accepted v4: score 93.8 → 93.8
+───────────────────────────────────────────────────────────── Iteration 3: reflect on v4 ─────────────────────────────────────────────────────────────
+Diagnosis: The run scored well: it found the true driver (distribution) and ended with no wrong, non-causal, or duplicate beliefs. The remaining loss 
+is timeliness. The agent opened three week-2 hypotheses at 0.50 and spent that week on a false price match. It only reached 0.7 in week 4, one week 
+after the driver first moved in week 3.
+  • edited rule: Each week, compare every driver metric's percentage change with the outcome's change in that same week, and open a belief only for 
+drivers that actually changed. Do not open hypotheses for drivers that were flat. Judge each week's move on its own metric rather than carrying 
+forward last week's explanation. (Avoids wasted speculative beliefs on flat drivers and keeps weekly attribution current.)
+  • edited rule: When a driver's move matches the outcome in size and timing and no other driver moved, start the belief at 0.6 or higher and raise it
+by at least +0.2 on each further match, reaching 0.7 on the first confirming observation after creation. (Speeds confidence to the 0.7 threshold, 
+improving timeliness.)
+  • edited rule: A single-week match is a candidate, not a conclusion. Confirm it by checking that the other drivers were flat that week. If a driver 
+moves in the same direction again in a later week, treat that as confirmation even when the size is partly cushioned by a secondary driver. (Keeps the
+confirmation check while allowing repeated matches to lift confidence quickly despite offsetting drivers.)
+Saved as playbook v5 (author: agent, parent v4)
+  v5 scored 93.8  (found True, {'true_cause_found': 35, 'timeliness': 18.8, 'no_wrong_active': 20, 'no_non_causal': 10, 'no_duplicates': 10})  8 LLM 
+calls · runs/run_20261011_194550.txt
+✔ Accepted v5: score 93.8 → 93.8
+────────────────────────────────────────────────────────────────────── Results ───────────────────────────────────────────────────────────────────────
+┏━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Version ┃ Author ┃ Changes                                                                     ┃ Score ┃ found_true_cause ┃ Outcome                ┃
+┡━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━┩
+│      v0 │ human  │ baseline: no rules, all guardrails off                                      │  73.8 │ yes              │ baseline               │
+├─────────┼────────┼─────────────────────────────────────────────────────────────────────────────┼───────┼──────────────────┼────────────────────────┤
+│      v3 │ agent  │ added rule: Form hypotheses only about causal drivers (price,               │  93.8 │ yes              │ accepted (73.8 → 93.8) │
+│         │        │ distribution/availability, promotion). Revenue and units are outcomes to be │       │                  │                        │
+│         │        │ explained, never the claim's test metric. (Removes the units-based beliefs  │       │                  │                        │
+│         │        │ that cost 10 points.)                                                       │       │                  │                        │
+│         │        │ added rule: Before creating a belief, check whether an active belief        │       │                  │                        │
+│         │        │ already covers the same region and metric. If so, reinforce, edit, or       │       │                  │                        │
+│         │        │ supersede that belief rather than opening a new one. (Prevents the          │       │                  │                        │
+│         │        │ duplicate distribution_points beliefs that cost 10 points.)                 │       │                  │                        │
+│         │        │ added rule: When a driver metric moves in step with the outcome (similar    │       │                  │                        │
+│         │        │ percentage change in the same week), treat it as the leading explanation    │       │                  │                        │
+│         │        │ and test it at once. Check the driver metrics first, before any             │       │                  │                        │
+│         │        │ demand-based story. (Speeds up identifying the true driver, which improves  │       │                  │                        │
+│         │        │ timeliness.)                                                                │       │                  │                        │
+│         │        │ added rule: When evidence contradicts a belief, supersede it with a refined │       │                  │                        │
+│         │        │ claim on the correct driver metric. Do not leave several overlapping claims │       │                  │                        │
+│         │        │ active. (Keeps the active belief set clean and avoids wrong active          │       │                  │                        │
+│         │        │ beliefs.)                                                                   │       │                  │                        │
+│         │        │ added rule: Raise confidence quickly when a driver metric's move matches    │       │                  │                        │
+│         │        │ the outcome's size and timing across consecutive weeks. Do not wait for     │       │                  │                        │
+│         │        │ many weeks of confirmation. (Earlier confidence on the true driver improves │       │                  │                        │
+│         │        │ the timeliness score.)                                                      │       │                  │                        │
+│         │        │ guardrail causal_metrics_only: off → on (Blocks symptom beliefs on units or │       │                  │                        │
+│         │        │ revenue, which cost 10 points.)                                             │       │                  │                        │
+│         │        │ guardrail no_duplicate_metric_beliefs: off → on (Blocks the repeated        │       │                  │                        │
+│         │        │ distribution_points beliefs that cost 10 points.)                           │       │                  │                        │
+├─────────┼────────┼─────────────────────────────────────────────────────────────────────────────┼───────┼──────────────────┼────────────────────────┤
+│      v4 │ agent  │ edited rule: Each week, compare every driver metric's percentage change     │  93.8 │ yes              │ accepted (93.8 → 93.8) │
+│         │        │ with the outcome's change in that same week. Treat the driver whose size    │       │                  │                        │
+│         │        │ and timing match as the leading explanation, and test it first. Judge each  │       │                  │                        │
+│         │        │ week's move on its own metric rather than carrying forward last week's      │       │                  │                        │
+│         │        │ explanation. (Makes the per-week check explicit, so a new driver move is    │       │                  │                        │
+│         │        │ picked up as soon as it appears.)                                           │       │                  │                        │
+│         │        │ edited rule: Raise confidence by a large step (at least +0.2) when a        │       │                  │                        │
+│         │        │ driver's move matches the outcome in size and timing, and again when the    │       │                  │                        │
+│         │        │ match repeats in the next week. Reach 0.7 within two matching observations. │       │                  │                        │
+│         │        │ (Gives a concrete confidence step so confidence passes 0.7 sooner and       │       │                  │                        │
+│         │        │ timeliness improves.)                                                       │       │                  │                        │
+│         │        │ added rule: A single-week match between one driver and the outcome is only  │       │                  │                        │
+│         │        │ a candidate. Confirm it by checking that the other drivers did not move in  │       │                  │                        │
+│         │        │ that week, and open competing hypotheses only for drivers that actually     │       │                  │                        │
+│         │        │ changed. (Reduces wasted hypotheses on drivers that were flat and keeps     │       │                  │                        │
+│         │        │ attention on the driver that moved.)                                        │       │                  │                        │
+├─────────┼────────┼─────────────────────────────────────────────────────────────────────────────┼───────┼──────────────────┼────────────────────────┤
+│      v5 │ agent  │ edited rule: Each week, compare every driver metric's percentage change     │  93.8 │ yes              │ accepted (93.8 → 93.8) │
+│         │        │ with the outcome's change in that same week, and open a belief only for     │       │                  │                        │
+│         │        │ drivers that actually changed. Do not open hypotheses for drivers that were │       │                  │                        │
+│         │        │ flat. Judge each week's move on its own metric rather than carrying forward │       │                  │                        │
+│         │        │ last week's explanation. (Avoids wasted speculative beliefs on flat drivers │       │                  │                        │
+│         │        │ and keeps weekly attribution current.)                                      │       │                  │                        │
+│         │        │ edited rule: When a driver's move matches the outcome in size and timing    │       │                  │                        │
+│         │        │ and no other driver moved, start the belief at 0.6 or higher and raise it   │       │                  │                        │
+│         │        │ by at least +0.2 on each further match, reaching 0.7 on the first           │       │                  │                        │
+│         │        │ confirming observation after creation. (Speeds confidence to the 0.7        │       │                  │                        │
+│         │        │ threshold, improving timeliness.)                                           │       │                  │                        │
+│         │        │ edited rule: A single-week match is a candidate, not a conclusion. Confirm  │       │                  │                        │
+│         │        │ it by checking that the other drivers were flat that week. If a driver      │       │                  │                        │
+│         │        │ moves in the same direction again in a later week, treat that as            │       │                  │                        │
+│         │        │ confirmation even when the size is partly cushioned by a secondary driver.  │       │                  │                        │
+│         │        │ (Keeps the confirmation check while allowing repeated matches to lift       │       │                  │                        │
+│         │        │ confidence quickly despite offsetting drivers.)                             │       │                  │                        │
+└─────────┴────────┴─────────────────────────────────────────────────────────────────────────────┴───────┴──────────────────┴────────────────────────┘
+                                                                   Final playbooks                                                                    
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ v5 (agent, score 93.8)                                                  ┃ v2 (human)                                                               ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ 1. Form hypotheses only about causal drivers (price,                    │ 1. Hypotheses must name a driver metric that could cause the revenue     │
+│ distribution/availability, promotion). Revenue and units are outcomes   │ change, never revenue or units themselves.                               │
+│ to be explained, never the claim's test metric.                         │ 2. Judge a belief by whether its driver metric is still off its week-1   │
+│ 2. Before creating a belief, check whether an active belief already     │ baseline in the direction that explains lower revenue. Replace or        │
+│ covers the same region and metric. If so, reinforce, edit, or supersede │ contradict it only once its own metric no longer supports it (for        │
+│ that belief rather than opening a new one.                              │ example, the driver has returned to baseline while revenue stays down).  │
+│ 3. Each week, compare every driver metric's percentage change with the  │ 3. Never create a belief that duplicates another active belief's metric  │
+│ outcome's change in that same week, and open a belief only for drivers  │ for the same region.                                                     │
+│ that actually changed. Do not open hypotheses for drivers that were     │                                                                          │
+│ flat. Judge each week's move on its own metric rather than carrying     │ Guardrails                                                               │
+│ forward last week's explanation.                                        │ ✔ causal_metrics_only                                                    │
+│ 4. When evidence contradicts a belief, supersede it with a refined      │ ✔ no_duplicate_metric_beliefs                                            │
+│ claim on the correct driver metric. Do not leave several overlapping    │                                                                          │
+│ claims active.                                                          │                                                                          │
+│ 5. When a driver's move matches the outcome in size and timing and no   │                                                                          │
+│ other driver moved, start the belief at 0.6 or higher and raise it by   │                                                                          │
+│ at least +0.2 on each further match, reaching 0.7 on the first          │                                                                          │
+│ confirming observation after creation.                                  │                                                                          │
+│ 6. A single-week match is a candidate, not a conclusion. Confirm it by  │                                                                          │
+│ checking that the other drivers were flat that week. If a driver moves  │                                                                          │
+│ in the same direction again in a later week, treat that as confirmation │                                                                          │
+│ even when the size is partly cushioned by a secondary driver.           │                                                                          │
+│                                                                         │                                                                          │
+│ Guardrails                                                              │                                                                          │
+│ ✔ causal_metrics_only                                                   │                                                                          │
+│ ✔ no_duplicate_metric_beliefs                                           │                                                                          │
+└─────────────────────────────────────────────────────────────────────────┴──────────────────────────────────────────────────────────────────────────┘
+
+LLM usage: 44 calls (41 in runs, 3 reflections) · tokens in 59,855 / out 10,534
+Active playbook restored to v2. To adopt the agent's version: playbook.set_active_version(<n>).
