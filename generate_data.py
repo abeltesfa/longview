@@ -34,9 +34,10 @@ def generate(rng):
                     promo = week == WEST_PROMO_WEEK
                     units_per_store = base_units_per_store * rng.uniform(0.98, 1.02)
                 else:
-                    dist = round(base_dist * rng.uniform(0.97, 1.03))
+                    # Small noise (about ±3% on revenue) so only West crosses the 5% drop threshold.
+                    dist = round(base_dist * rng.uniform(0.99, 1.01))
                     promo = False
-                    units_per_store = base_units_per_store * rng.uniform(0.93, 1.07)
+                    units_per_store = base_units_per_store * rng.uniform(0.985, 1.015)
 
                 if promo:
                     units_per_store *= PROMO_UNIT_LIFT

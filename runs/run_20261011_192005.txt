@@ -1,0 +1,121 @@
+Run started 2026-10-11 19:20:05 UTC, playbook v1
+Memory reset.
+
+======================================================================
+WEEK 2
+======================================================================
+  East   revenue     57,220  (-1.6% WoW)
+  North  revenue     57,666  (-0.2% WoW)
+  South  revenue     57,549  (-0.5% WoW)
+  West   revenue     48,683  (-16.0% WoW)
+
+--- FLAGGED: West revenue -16.0% WoW ---
+  No active beliefs; asking LLM for hypotheses:
+    [llm claude-sonnet-5-5] tokens in=285 out=366
+    + [avg_price] A price increase in the West region reduced customer demand, so a higher average selling price is driving the revenue decline.  (conf 0.5)
+    + [distribution_points] The West region lost retail distribution (stores or shelf placements carrying the product), so fewer purchase opportunities are causing the revenue decline.  (conf 0.5)
+    + [promo_active] A promotion that was active in week 1 ended before week 2, so the loss of promotional lift is driving the revenue decline.  (conf 0.5)
+
+  Belief: "A price increase in the West region reduced customer demand, so a higher average selling price is driving the revenue decline."  (conf 0.50)
+    data checked [avg_price]: wk1=2.82  wk2=2.83
+    revenue for context:  wk1=57,959.81  wk2=48,683.28
+    [llm claude-sonnet-5-5] tokens in=690 out=128
+    → CONTRADICT  conf 0.50 → 0.10
+      reason: Average price was essentially flat (2.82 to 2.83, about +0.4%), which cannot explain a revenue drop of roughly 16% (57,959.81 to 48,683.28). The belief's own test says a flat price refutes it, and the data offers no better explanation yet.
+
+  Belief: "The West region lost retail distribution (stores or shelf placements carrying the product), so fewer purchase opportunities are causing the revenue decline."  (conf 0.50)
+    data checked [distribution_points]: wk1=950  wk2=807
+    revenue for context:  wk1=57,959.81  wk2=48,683.28
+    [llm claude-sonnet-5-5] tokens in=696 out=114
+    → REINFORCE  conf 0.50 → 0.65
+      reason: Distribution points fell from 950 to 807 (-15.1%) while revenue fell from 57,959.81 to 48,683.28 (-16.0%), a similar proportional drop that is consistent with lost retail availability driving the decline.
+
+  Belief: "A promotion that was active in week 1 ended before week 2, so the loss of promotional lift is driving the revenue decline."  (conf 0.50)
+    data checked [promo_active]: wk1=n  wk2=n
+    revenue for context:  wk1=57,959.81  wk2=48,683.28
+    [llm claude-sonnet-5-5] tokens in=692 out=118
+    → CONTRADICT  conf 0.50 → 0.10
+      reason: promo_active was false in both week 1 and week 2, so no promotion ended and promo roll-off cannot explain the revenue drop from 57,959.81 to 48,683.28. The data offers no alternative driver, since avg_price and distribution_points are not shown here, so there is no basis to supersede.
+
+======================================================================
+WEEK 3
+======================================================================
+  East   revenue     58,418  (+2.1% WoW)
+  North  revenue     57,240  (-0.7% WoW)
+  South  revenue     58,133  (+1.0% WoW)
+  West   revenue     44,892  (-7.8% WoW)
+  intervention recorded: West promo in week 3
+
+--- FLAGGED: West revenue -7.8% WoW ---
+  1 active belief(s) in memory; testing against new data.
+
+  Belief: "The West region lost retail distribution (stores or shelf placements carrying the product), so fewer purchase opportunities are causing the revenue decline."  (conf 0.65)
+    data checked [distribution_points]: wk1=950  wk2=807  wk3=687
+    revenue for context:  wk1=57,959.81  wk2=48,683.28  wk3=44,891.74
+    [llm claude-sonnet-5-5] tokens in=862 out=123
+    → REINFORCE  conf 0.65 → 0.80
+      reason: Distribution points fell again from 807 to 687 (-14.9%) in week 3, and are down 27.7% since week 1 (950). Revenue fell 7.8% in week 3 (48,683 to 44,892) and 22.5% overall, so the decline continues alongside the loss of distribution even with a promo active.
+
+======================================================================
+WEEK 4
+======================================================================
+  East   revenue     57,234  (-2.0% WoW)
+  North  revenue     57,178  (-0.1% WoW)
+  South  revenue     58,198  (+0.1% WoW)
+  West   revenue     35,455  (-21.0% WoW)
+
+--- FLAGGED: West revenue -21.0% WoW ---
+  1 active belief(s) in memory; testing against new data.
+
+  Belief: "The West region lost retail distribution (stores or shelf placements carrying the product), so fewer purchase opportunities are causing the revenue decline."  (conf 0.80)
+    data checked [distribution_points]: wk1=950  wk2=807  wk3=687  wk4=584
+    revenue for context:  wk1=57,959.81  wk2=48,683.28  wk3=44,891.74  wk4=35,454.72
+    [llm claude-sonnet-5-5] tokens in=1031 out=136
+    → REINFORCE  conf 0.80 → 0.95
+      reason: Distribution points fell again from 687 to 584 (-15.0%) in week 4 and are down 38.5% since week 1 (950), while revenue fell 21.0% in week 4 (44,892 to 35,455) and 38.8% overall. Revenue has tracked the distribution loss closely even with a week 3 promo, so the claim remains well supported.
+
+======================================================================
+WEEK 5
+======================================================================
+  East   revenue     57,773  (+0.9% WoW)
+  North  revenue     57,645  (+0.8% WoW)
+  South  revenue     57,278  (-1.6% WoW)
+  West   revenue     30,562  (-13.8% WoW)
+
+--- FLAGGED: West revenue -13.8% WoW ---
+  1 active belief(s) in memory; testing against new data.
+
+  Belief: "The West region lost retail distribution (stores or shelf placements carrying the product), so fewer purchase opportunities are causing the revenue decline."  (conf 0.95)
+    data checked [distribution_points]: wk1=950  wk2=807  wk3=687  wk4=584  wk5=497
+    revenue for context:  wk1=57,959.81  wk2=48,683.28  wk3=44,891.74  wk4=35,454.72  wk5=30,562.07
+    [llm claude-sonnet-5-5] tokens in=1213 out=120
+    → REINFORCE  conf 0.95 → 0.99
+      reason: Distribution points fell again from 584 to 497 (-14.9%) in week 5 and are down 47.7% since week 1 (950), while revenue fell 13.8% (35,455 to 30,562) and 47.3% overall. The near-identical cumulative declines continue to support lost distribution as the driver.
+
+======================================================================
+WEEK 6
+======================================================================
+  East   revenue     57,086  (-1.2% WoW)
+  North  revenue     57,698  (+0.1% WoW)
+  South  revenue     57,028  (-0.4% WoW)
+  West   revenue     25,512  (-16.5% WoW)
+
+--- FLAGGED: West revenue -16.5% WoW ---
+  1 active belief(s) in memory; testing against new data.
+
+  Belief: "The West region lost retail distribution (stores or shelf placements carrying the product), so fewer purchase opportunities are causing the revenue decline."  (conf 0.99)
+    data checked [distribution_points]: wk1=950  wk2=807  wk3=687  wk4=584  wk5=497  wk6=421
+    revenue for context:  wk1=57,959.81  wk2=48,683.28  wk3=44,891.74  wk4=35,454.72  wk5=30,562.07  wk6=25,512.34
+    [llm claude-sonnet-5-5] tokens in=1379 out=122
+    → REINFORCE  conf 0.99 → 0.99
+      reason: Distribution points fell again from 497 to 421 (-15.3%) in week 6 and are down 55.7% since week 1 (950), while revenue fell 16.5% (30,562 to 25,512) and is down 56.0% overall. The near-identical cumulative declines continue to support lost distribution as the driver.
+
+======================================================================
+FINAL BELIEFS
+======================================================================
+  West   contradicted 0.10  [avg_price] A price increase in the West region reduced customer demand, so a higher average selling price is driving the revenue decline.
+  West   active       0.99  [distribution_points] The West region lost retail distribution (stores or shelf placements carrying the product), so fewer purchase opportunities are causing the revenue decline.
+  West   contradicted 0.10  [promo_active] A promotion that was active in week 1 ended before week 2, so the loss of promotional lift is driving the revenue decline.
+
+found_true_cause: True
+Saved log to runs/run_20261011_192005.txt and summary to runs collection.

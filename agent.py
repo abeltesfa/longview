@@ -1,7 +1,7 @@
 """Weekly agent: flag revenue drops, form hypotheses, test them against data, update memory."""
 import json
 
-from analysis import METRICS, get_metric_series, promo_regions, region_week_summary
+from analysis import get_metric_series, promo_regions, region_week_summary
 from llm import ask_json
 from memory import (
     ACTIVE,
@@ -14,6 +14,7 @@ from memory import (
     reinforce,
     supersede,
 )
+from playbook import get_active_playbook, rules_text
 
 DROP_THRESHOLD = -5.0  # % week-over-week revenue change that triggers investigation
 NEW_HYPOTHESIS_CONFIDENCE = 0.5
@@ -22,7 +23,11 @@ SUPERSEDE_CONFIDENCE = 0.6
 HYPOTHESIS_SYSTEM = """You are a sales analyst. A region's revenue is falling.
 Propose 2-3 competing causal hypotheses. Each must name exactly one metric from the
 provided list that would confirm or refute it. Prefer hypotheses that test different metrics.
-Return: {"hypotheses": [{"claim": "...", "metric": "...", "rationale": "..."}]}"""
+
+Playbook rules (must follow):
+{rules}
+
+Return: {{"hypotheses": [{{"claim": "...", "metric": "...", "rationale": "..."}}]}}"""
 
 DECISION_SYSTEM = """You are a sales analyst maintaining a set of beliefs about why revenue changed.
 Given one belief, the data for the metric that tests it, revenue for context, past interventions,
@@ -33,8 +38,12 @@ and the belief's history, decide how the belief should change:
   with new_metric naming the metric (from the list) that would test it.
 - NO_CHANGE: the data is inconclusive.
 Base the decision on the numbers. Keep reason to one or two sentences citing them.
-Return: {"action": "REINFORCE|CONTRADICT|SUPERSEDE|NO_CHANGE", "reason": "...",
-"new_claim": "... (SUPERSEDE only)", "new_metric": "... (SUPERSEDE only)"}"""
+
+Playbook rules (must follow, including for any new_claim):
+{rules}
+
+Return: {{"action": "REINFORCE|CONTRADICT|SUPERSEDE|NO_CHANGE", "reason": "...",
+"new_claim": "... (SUPERSEDE only)", "new_metric": "... (SUPERSEDE only)"}}"""
 
 
 def _fmt_series(series):
@@ -50,17 +59,18 @@ def _record_promos(week):
         print(f"  intervention recorded: {region} promo in week {week}")
 
 
-def _propose_hypotheses(region, week):
+def _propose_hypotheses(region, week, playbook):
     revenue = get_metric_series(region, "revenue", week)
-    result = ask_json(HYPOTHESIS_SYSTEM, json.dumps({
+    allowed = playbook["causal_metrics"]
+    result = ask_json(HYPOTHESIS_SYSTEM.format(rules=rules_text(playbook)), json.dumps({
         "region": region,
         "weekly_revenue": revenue,
-        "available_metrics": METRICS,
+        "available_metrics": allowed,
     }))
     created = []
     for h in result.get("hypotheses", [])[:3]:
-        if h.get("metric") not in METRICS:
-            print(f"    skipped hypothesis with unknown metric {h.get('metric')!r}: {h.get('claim')}")
+        if h.get("metric") not in allowed:
+            print(f"    skipped hypothesis with non-causal metric {h.get('metric')!r}: {h.get('claim')}")
             continue
         bid = create_belief(region, h["metric"], h["claim"], NEW_HYPOTHESIS_CONFIDENCE, week,
                             reason=h.get("rationale", "initial hypothesis"))
@@ -69,7 +79,7 @@ def _propose_hypotheses(region, week):
     return created
 
 
-def _evaluate(belief, week, interventions, use_memory):
+def _evaluate(belief, week, interventions, use_memory, playbook):
     region, metric = belief["region"], belief["metric"]
     series = get_metric_series(region, metric, week)
     revenue = get_metric_series(region, "revenue", week)
@@ -80,7 +90,9 @@ def _evaluate(belief, week, interventions, use_memory):
 
     history = [{k: h[k] for k in ("week", "action", "new_confidence", "reason")}
                for h in belief["history"]] if use_memory else []
-    decision = ask_json(DECISION_SYSTEM, json.dumps({
+    allowed = playbook["causal_metrics"]
+    decision = ask_json(DECISION_SYSTEM.format(rules=rules_text(playbook)), json.dumps({
+        "region": region,
         "current_week": week,
         "claim": belief["claim"],
         "metric": metric,
@@ -88,7 +100,7 @@ def _evaluate(belief, week, interventions, use_memory):
         "revenue_series": revenue,
         "interventions": [{"week": i["week"], "description": i["description"]} for i in interventions],
         "belief_history": history,
-        "available_metrics": METRICS,
+        "available_metrics": allowed,
     }))
 
     action = str(decision.get("action", "NO_CHANGE")).upper()
@@ -104,7 +116,7 @@ def _evaluate(belief, week, interventions, use_memory):
         print(f"    → CONTRADICT  conf {old_conf:.2f} → {new_conf:.2f}")
     elif action == "SUPERSEDE" and decision.get("new_claim"):
         new_metric = decision.get("new_metric")
-        if new_metric not in METRICS:
+        if new_metric not in allowed:
             new_metric = None
         contradict(bid, week, reason)
         new_id = supersede(bid, decision["new_claim"], SUPERSEDE_CONFIDENCE, week, reason, metric=new_metric)
@@ -119,6 +131,7 @@ def _evaluate(belief, week, interventions, use_memory):
 def process_week(week, use_memory=True):
     """Run one weekly cycle. With use_memory=False, prior beliefs and history are ignored."""
     print(f"\n{'=' * 70}\nWEEK {week}\n{'=' * 70}")
+    playbook = get_active_playbook()
 
     summary = region_week_summary(week)
     for s in summary:
@@ -143,10 +156,10 @@ def process_week(week, use_memory=True):
 
         if not beliefs:
             print("  No active beliefs; asking LLM for hypotheses:")
-            _propose_hypotheses(region, week)
+            _propose_hypotheses(region, week, playbook)
             beliefs = [b for b in get_beliefs(region=region, status=ACTIVE) if b["created_week"] == week]
         else:
             print(f"  {len(beliefs)} active belief(s) in memory; testing against new data.")
 
         for belief in beliefs:
-            _evaluate(belief, week, interventions, use_memory)
+            _evaluate(belief, week, interventions, use_memory, playbook)

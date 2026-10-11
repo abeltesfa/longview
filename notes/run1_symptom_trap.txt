@@ -1,0 +1,151 @@
+RUN 1: "symptom trap" (first full run, weeks 2-6, before the playbook / noise / region fixes)
+Commit: 72cac35   Model: claude-sonnet-5-5
+
+NOTE ON FIDELITY: This is the run's printed output as captured in the session, with one exception.
+The per-belief "revenue for context:" lines were filtered out at capture time (grep -v), so they
+are missing below. Everything else is verbatim.
+
+What happened: the agent never proposed "distribution loss" for West. It latched onto "fewer
+units sold" (a symptom: revenue = units x price, so units always falls with revenue when price
+is flat) and reinforced it every week up to 0.99. distribution_points was never tested, so no
+SUPERSEDE ever fired. East was also flagged twice from data noise (-9.4% wk4, -5.1% wk6).
+The decision prompt also lacked the region, so the LLM kept noting "West-specific part unverified".
+
+----------------------------------------------------------------------------------------------------
+Memory reset.
+
+======================================================================
+WEEK 2
+======================================================================
+  East   revenue     56,391  (-4.2% WoW)
+  North  revenue     58,240  (+3.1% WoW)
+  South  revenue     56,883  (-2.0% WoW)
+  West   revenue     48,683  (-16.0% WoW)
+
+--- FLAGGED: West revenue -16.0% WoW ---
+  No active beliefs; asking LLM for hypotheses:
+    [llm claude-sonnet-5-5] tokens in=246 out=450
+    + [units] Sales volume fell because customers are buying fewer units, which points to weaker demand or lost customers in the West region rather than a pricing issue.  (conf 0.5)
+    + [avg_price] Average selling price declined, for example through discounting, a shift toward cheaper products, or competitive price pressure, which reduced revenue even though unit volume held up.  (conf 0.5)
+    + [promo_active] A promotion ran in week 1 and ended before week 2, so week 1 revenue was inflated and the drop reflects a return to baseline rather than a structural decline.  (conf 0.5)
+
+  Belief: "Sales volume fell because customers are buying fewer units, which points to weaker demand or lost customers in the West region rather than a pricing issue."  (conf 0.50)
+    data checked [units]: wk1=24,027  wk2=20,388
+    [llm claude-sonnet-5-5] tokens in=667 out=153
+    → REINFORCE  conf 0.50 → 0.65
+      reason: Units fell from 24,027 to 20,388 (-15.1%), close to the revenue drop of -16.0% (57,959.81 to 48,683.28), so the decline is volume-driven. Implied average price moved only from about 2.41 to 2.39, which rules out pricing. The data does not isolate the West region, so that part of the claim remains unverified.
+
+  Belief: "Average selling price declined, for example through discounting, a shift toward cheaper products, or competitive price pressure, which reduced revenue even though unit volume held up."  (conf 0.50)
+    data checked [avg_price]: wk1=2.82  wk2=2.83
+    [llm claude-sonnet-5-5] tokens in=671 out=129
+    → CONTRADICT  conf 0.50 → 0.10
+      reason: Avg price was flat to slightly up (2.82 to 2.83, +0.4%) while revenue fell about 16% (57,959.81 to 48,683.28), so price erosion does not explain the drop. The data does not point to a specific better explanation, though volume is the likely driver.
+
+  Belief: "A promotion ran in week 1 and ended before week 2, so week 1 revenue was inflated and the drop reflects a return to baseline rather than a structural decline."  (conf 0.50)
+    data checked [promo_active]: wk1=n  wk2=n
+    [llm claude-sonnet-5-5] tokens in=667 out=123
+    → CONTRADICT  conf 0.50 → 0.10
+      reason: promo_active was false in both week 1 and week 2, so no promotion inflated week 1 revenue (57,959.81), which refutes the post-promo normalization claim. The 16% drop to 48,683.28 needs another explanation, but the data here points to none yet.
+
+======================================================================
+WEEK 3
+======================================================================
+  East   revenue     61,566  (+9.2% WoW)
+  North  revenue     55,971  (-3.9% WoW)
+  South  revenue     58,460  (+2.8% WoW)
+  West   revenue     44,892  (-7.8% WoW)
+  intervention recorded: West promo in week 3
+
+--- FLAGGED: West revenue -7.8% WoW ---
+  1 active belief(s) in memory; testing against new data.
+
+  Belief: "Sales volume fell because customers are buying fewer units, which points to weaker demand or lost customers in the West region rather than a pricing issue."  (conf 0.65)
+    data checked [units]: wk1=24,027  wk2=20,388  wk3=18,614
+    [llm claude-sonnet-5-5] tokens in=873 out=162
+    → REINFORCE  conf 0.65 → 0.80
+      reason: Units fell again from 20,388 to 18,614 (-8.7%), in line with revenue's drop from 48,683.28 to 44,891.74 (-7.8%). Implied average price stayed near 2.39 to 2.41, so the decline is still volume-driven rather than price-driven. The West-specific part remains unverified, and the week 3 West promo did not stop units from falling.
+
+======================================================================
+WEEK 4
+======================================================================
+  East   revenue     55,765  (-9.4% WoW)
+  North  revenue     55,700  (-0.5% WoW)
+  South  revenue     58,180  (-0.5% WoW)
+  West   revenue     35,455  (-21.0% WoW)
+
+--- FLAGGED: East revenue -9.4% WoW ---
+  No active beliefs; asking LLM for hypotheses:
+    [llm claude-sonnet-5-5] tokens in=280 out=434
+    + [units] Volume decline: fewer units are being sold in the East region, for example from weaker demand or increased competition, which is driving revenue down even though pricing is stable.  (conf 0.5)
+    + [avg_price] Price erosion: average selling price has dropped due to discounting, mix shift toward cheaper products, or competitive price pressure, so each unit brings in less revenue.  (conf 0.5)
+    + [distribution_points] Reduced distribution: the product is available in fewer stores or channels in the East region (delistings, lost shelf space), which limits sales opportunities and reduces revenue.  (conf 0.5)
+
+  Belief: "Volume decline: fewer units are being sold in the East region, for example from weaker demand or increased competition, which is driving revenue down even though pricing is stable."  (conf 0.50)
+    data checked [units]: wk1=24,744  wk2=23,628  wk3=25,816  wk4=23,583
+    [llm claude-sonnet-5-5] tokens in=727 out=177
+    → REINFORCE  conf 0.50 → 0.65
+      reason: Units track revenue closely: week 3 to week 4 units fell from 25,816 to 23,583 (-8.6%) while revenue fell from 61,566 to 55,765 (-9.4%). Implied price per unit is stable (~2.38 to 2.36), so the decline is volume-driven, though the week 1-4 trend is roughly flat (24,744 to 23,583, -4.7%) rather than steadily falling.
+
+  Belief: "Price erosion: average selling price has dropped due to discounting, mix shift toward cheaper products, or competitive price pressure, so each unit brings in less revenue."  (conf 0.50)
+    data checked [avg_price]: wk1=2.84  wk2=2.82  wk3=2.82  wk4=2.83
+    [llm claude-sonnet-5-5] tokens in=738 out=118
+    → CONTRADICT  conf 0.50 → 0.10
+      reason: Average price is flat at 2.82-2.84 across all four weeks, including the revenue dips in weeks 2 (56,391) and 4 (55,765), so price did not decline with revenue. The dips are more likely due to volume, not price erosion.
+
+  Belief: "Reduced distribution: the product is available in fewer stores or channels in the East region (delistings, lost shelf space), which limits sales opportunities and reduces revenue."  (conf 0.50)
+    data checked [distribution_points]: wk1=939  wk2=953  wk3=974  wk4=953
+    [llm claude-sonnet-5-5] tokens in=718 out=127
+    → CONTRADICT  conf 0.50 → 0.10
+      reason: Distribution points were stable to slightly up (939 to 953, peaking at 974 in week 3), so there was no sustained loss of availability. Revenue fell in week 2 and week 4 while distribution was flat or rising, and the week 3 revenue peak coincided with the distribution peak, so distribution does not explain the dips.
+
+--- FLAGGED: West revenue -21.0% WoW ---
+  1 active belief(s) in memory; testing against new data.
+
+  Belief: "Sales volume fell because customers are buying fewer units, which points to weaker demand or lost customers in the West region rather than a pricing issue."  (conf 0.80)
+    data checked [units]: wk1=24,027  wk2=20,388  wk3=18,614  wk4=14,682
+    [llm claude-sonnet-5-5] tokens in=1065 out=140
+    → REINFORCE  conf 0.80 → 0.95
+      reason: Units fell again from 18,614 to 14,682 (-21.1%), roughly matching revenue's drop from 44,891.74 to 35,454.72 (-21.0%). Implied average price stayed at about 2.41, so the decline is volume-driven rather than price-driven. The West-specific part is still unverified, and the week 3 West promo did not stop the decline.
+
+======================================================================
+WEEK 5
+======================================================================
+  East   revenue     57,485  (+3.1% WoW)
+  North  revenue     57,349  (+3.0% WoW)
+  South  revenue     55,678  (-4.3% WoW)
+  West   revenue     30,562  (-13.8% WoW)
+
+--- FLAGGED: West revenue -13.8% WoW ---
+  1 active belief(s) in memory; testing against new data.
+
+  Belief: "Sales volume fell because customers are buying fewer units, which points to weaker demand or lost customers in the West region rather than a pricing issue."  (conf 0.95)
+    data checked [units]: wk1=24,027  wk2=20,388  wk3=18,614  wk4=14,682  wk5=12,733
+    [llm claude-sonnet-5-5] tokens in=1252 out=138
+    → REINFORCE  conf 0.95 → 0.99
+      reason: Units fell again from 14,682 to 12,733 (-13.3%), close to revenue's drop from 35,454.72 to 30,562.07 (-13.8%). Implied average price stays near 2.40, so the decline is volume-driven rather than price-driven. The West-specific part is still unverified in this data.
+
+======================================================================
+WEEK 6
+======================================================================
+  East   revenue     54,559  (-5.1% WoW)
+  North  revenue     56,600  (-1.3% WoW)
+  South  revenue     54,613  (-1.9% WoW)
+  West   revenue     25,512  (-16.5% WoW)
+
+--- FLAGGED: East revenue -5.1% WoW ---
+  1 active belief(s) in memory; testing against new data.
+
+  Belief: "Volume decline: fewer units are being sold in the East region, for example from weaker demand or increased competition, which is driving revenue down even though pricing is stable."  (conf 0.65)
+    data checked [units]: wk1=24,744  wk2=23,628  wk3=25,816  wk4=23,583  wk5=23,994  wk6=22,628
+    [llm claude-sonnet-5-5] tokens in=966 out=115
+    → REINFORCE  conf 0.65 → 0.80
+      reason: Units fell from 24,744 in week 1 to 22,628 in week 6 (-8.6%), while revenue fell from 58,865 to 54,559 (-7.3%). Implied price per unit stays stable (~2.38 to 2.41), so the revenue decline is volume-driven.
+
+--- FLAGGED: West revenue -16.5% WoW ---
+  1 active belief(s) in memory; testing against new data.
+
+  Belief: "Sales volume fell because customers are buying fewer units, which points to weaker demand or lost customers in the West region rather than a pricing issue."  (conf 0.99)
+    data checked [units]: wk1=24,027  wk2=20,388  wk3=18,614  wk4=14,682  wk5=12,733  wk6=10,618
+    [llm claude-sonnet-5-5] tokens in=1420 out=139
+    → REINFORCE  conf 0.99 → 0.99
+      reason: Units fell again from 12,733 to 10,618 (-16.6%), close to revenue's drop from 30,562.07 to 25,512.34 (-16.5%). Implied average price stays near 2.40, so the decline is volume-driven rather than price-driven. The West-specific part is still not isolated in this data.
