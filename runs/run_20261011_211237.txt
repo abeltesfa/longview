@@ -1,0 +1,171 @@
+Run started 2026-10-11 21:12:37 UTC, playbook v0 (human)
+Memory reset.
+
+======================================================================
+WEEK 2
+======================================================================
+  East   revenue     50,370  (-13.4% WoW)
+  North  revenue     57,666  (-0.2% WoW)
+  South  revenue     57,549  (-0.5% WoW)
+  West   revenue     57,535  (-2.4% WoW)
+
+--- FLAGGED: East revenue -13.4% WoW ---
+  No active beliefs; asking LLM for hypotheses:
+    + [units] Fewer units are selling because demand or traffic dropped.  (conf 0.5)
+    + [avg_price] Lower realized prices or discounting eroded revenue per unit.  (conf 0.5)
+    + [distribution_points] Lost store or channel presence reduced availability in East.  (conf 0.5)
+
+  Belief: "Fewer units are selling because demand or traffic dropped."  (conf 0.50)
+    data checked [units]: wk1=24,145  wk2=21,054
+    revenue for context:  wk1=58,158.55  wk2=50,370.42
+    → SUPERSEDE  old conf 0.50 → superseded
+      new belief: [distribution_points] "Lost distribution (fewer points of distribution) is driving the unit and revenue decline."  (conf 0.60)
+      reason: Units fell 12.8% (24,145 to 21,054), matching the revenue drop, with price flat (2.84 to 2.82) and no promo. But distribution points fell 11.6% (947 to 837), which points to lost store/shelf presence as a better explanation than demand or traffic.
+
+  Belief: "Lower realized prices or discounting eroded revenue per unit."  (conf 0.50)
+    data checked [avg_price]: wk1=2.84  wk2=2.82
+    revenue for context:  wk1=58,158.55  wk2=50,370.42
+    → SUPERSEDE  old conf 0.50 → superseded
+      new belief: [distribution_points] "Loss of distribution points reduced unit volume and revenue."  (conf 0.60)
+      reason: Avg price barely moved (2.84 to 2.82, about -0.7%), so price erosion does not explain the 13.4% revenue drop. Units fell about 12.8% (24145 to 21054) alongside distribution points down about 11.6% (947 to 837), pointing to lost distribution.
+
+  Belief: "Lost store or channel presence reduced availability in East."  (conf 0.50)
+    data checked [distribution_points]: wk1=947  wk2=837
+    revenue for context:  wk1=58,158.55  wk2=50,370.42
+    → REINFORCE  conf 0.50 → 0.65
+      reason: Distribution points fell from 947 to 837 (-11.6%), closely matching the revenue drop of 13.4% (58,159 to 50,370) and the units drop of 12.8%. Price (2.84 to 2.82) and promo (inactive in both weeks) were essentially unchanged, so lost availability is the most plausible explanation.
+
+======================================================================
+WEEK 3
+======================================================================
+  East   revenue     47,729  (-5.2% WoW)
+  North  revenue     57,240  (-0.7% WoW)
+  South  revenue     58,133  (+1.0% WoW)
+  West   revenue     57,201  (-0.6% WoW)
+
+--- FLAGGED: East revenue -5.2% WoW ---
+  3 active belief(s) in memory; testing against new data.
+
+  Belief: "Lost store or channel presence reduced availability in East."  (conf 0.65)
+    data checked [distribution_points]: wk1=947  wk2=837  wk3=843
+    revenue for context:  wk1=58,158.55  wk2=50,370.42  wk3=47,729.11
+    → NO_CHANGE
+      reason: Distribution points fell from 947 to 837 in week 2 and were roughly flat in week 3 (843), yet revenue fell a further 5.2% (50,370 to 47,729) and units fell 13.1%. The week 3 decline is not explained by distribution, which is partly confounded by a price rise from 2.82 to 3.08, so the belief is neither clearly supported nor refuted.
+
+  Belief: "Lost distribution (fewer points of distribution) is driving the unit and revenue decline."  (conf 0.60)
+    data checked [distribution_points]: wk1=947  wk2=837  wk3=843
+    revenue for context:  wk1=58,158.55  wk2=50,370.42  wk3=47,729.11
+    → SUPERSEDE  old conf 0.60 → superseded
+      new belief: [avg_price] "Price increase (2.82 to 3.08) is suppressing units and revenue."  (conf 0.60)
+      reason: Distribution fell 11.6% in week 2 (947 to 837) but stabilized in week 3 (843, +0.7%), while units kept falling (21,054 to 18,293, -13.1%). Avg price rose 9.2% (2.82 to 3.08) with no promo, so the week 3 decline is better explained by the price increase than by distribution.
+
+  Belief: "Loss of distribution points reduced unit volume and revenue."  (conf 0.60)
+    data checked [distribution_points]: wk1=947  wk2=837  wk3=843
+    revenue for context:  wk1=58,158.55  wk2=50,370.42  wk3=47,729.11
+    → NO_CHANGE
+      reason: Distribution points fell 11.6% in week 2 (947 to 837) and stayed flat in week 3 (843), yet units kept falling another 13% (21054 to 18293) and revenue fell again. Week 2 fits the claim, but week 3 shows a further decline that distribution alone does not explain, so the data does not clearly confirm or refute the belief.
+
+======================================================================
+WEEK 4
+======================================================================
+  East   revenue     42,393  (-11.2% WoW)
+  North  revenue     57,178  (-0.1% WoW)
+  South  revenue     58,198  (+0.1% WoW)
+  West   revenue     57,733  (+0.9% WoW)
+
+--- FLAGGED: East revenue -11.2% WoW ---
+  3 active belief(s) in memory; testing against new data.
+
+  Belief: "Lost store or channel presence reduced availability in East."  (conf 0.65)
+    data checked [distribution_points]: wk1=947  wk2=837  wk3=843  wk4=951
+    revenue for context:  wk1=58,158.55  wk2=50,370.42  wk3=47,729.11  wk4=42,392.93
+    → SUPERSEDE  old conf 0.65 → superseded
+      new belief: [avg_price] "Price increase to 3.08 reduced unit demand in East."  (conf 0.60)
+      reason: Distribution points recovered to 951 in week 4 (above week 1's 947) while revenue kept falling to 42,393 (-27% vs week 1) and units to 16,266, so lost availability no longer explains the decline. Avg price rose from 2.82 to 3.08 in week 3 (+9%) and units kept falling, which points to price-driven demand loss.
+
+  Belief: "Loss of distribution points reduced unit volume and revenue."  (conf 0.60)
+    data checked [distribution_points]: wk1=947  wk2=837  wk3=843  wk4=951
+    revenue for context:  wk1=58,158.55  wk2=50,370.42  wk3=47,729.11  wk4=42,392.93
+    → SUPERSEDE  old conf 0.60 → superseded
+      new belief: [avg_price] "Price increase in week 3 (2.82 to 3.08) is suppressing unit volume and revenue."  (conf 0.60)
+      reason: Distribution points recovered to 951 by week 4 (above week 1's 947), yet units kept falling to 16,266 (-32.6% vs week 1) and revenue to 42,393. Lost distribution cannot explain the continued decline. Price rose about 8.5% (2.84 to 3.08) in week 3 and held, which fits the unit drop.
+
+  Belief: "Price increase (2.82 to 3.08) is suppressing units and revenue."  (conf 0.60)
+    data checked [avg_price]: wk1=2.84  wk2=2.82  wk3=3.08  wk4=3.08
+    revenue for context:  wk1=58,158.55  wk2=50,370.42  wk3=47,729.11  wk4=42,392.93
+    → REINFORCE  conf 0.60 → 0.75
+      reason: Avg price rose 9.2% (2.82 to 3.08) and held in week 4, while units kept falling (18,293 to 16,266, -11.1%) and revenue fell to 42,393 even though distribution recovered (843 to 951) and no promo ran. That pattern fits price suppressing demand.
+
+======================================================================
+WEEK 5
+======================================================================
+  East   revenue     38,377  (-9.5% WoW)
+  North  revenue     57,645  (+0.8% WoW)
+  South  revenue     57,278  (-1.6% WoW)
+  West   revenue     57,761  (+0.0% WoW)
+
+--- FLAGGED: East revenue -9.5% WoW ---
+  3 active belief(s) in memory; testing against new data.
+
+  Belief: "Price increase (2.82 to 3.08) is suppressing units and revenue."  (conf 0.75)
+    data checked [avg_price]: wk1=2.84  wk2=2.82  wk3=3.08  wk4=3.08  wk5=3.08
+    revenue for context:  wk1=58,158.55  wk2=50,370.42  wk3=47,729.11  wk4=42,392.93  wk5=38,376.61
+    → REINFORCE  conf 0.75 → 0.90
+      reason: Avg price stepped up 9.2% (2.82 to 3.08) in week 3 and held through week 5, while units kept falling (16,266 to 14,660, -9.9%) and revenue dropped to 38,377 despite distribution staying high (953) and no promo. The metric supports the price claim, though units were already declining before the increase (24,145 to 21,054), so the price effect is not the sole driver.
+
+  Belief: "Price increase to 3.08 reduced unit demand in East."  (conf 0.60)
+    data checked [avg_price]: wk1=2.84  wk2=2.82  wk3=3.08  wk4=3.08  wk5=3.08
+    revenue for context:  wk1=58,158.55  wk2=50,370.42  wk3=47,729.11  wk4=42,392.93  wk5=38,376.61
+    → REINFORCE  conf 0.60 → 0.75
+      reason: Avg price rose from 2.82 to 3.08 (+9%) in week 3 and held; units kept falling (21,054 to 18,293 to 16,266 to 14,660) even though distribution recovered to 953 and no promo ran, consistent with price-driven demand loss. Units were already declining before the increase, so the effect size is uncertain.
+
+  Belief: "Price increase in week 3 (2.82 to 3.08) is suppressing unit volume and revenue."  (conf 0.60)
+    data checked [avg_price]: wk1=2.84  wk2=2.82  wk3=3.08  wk4=3.08  wk5=3.08
+    revenue for context:  wk1=58,158.55  wk2=50,370.42  wk3=47,729.11  wk4=42,392.93  wk5=38,376.61
+    → REINFORCE  conf 0.60 → 0.75
+      reason: Price rose from 2.82 to 3.08 in week 3 (+9.2%) and held through week 5. Units kept falling, from 18,293 to 14,660, and revenue from 47,729 to 38,377, while distribution recovered to 953 and no promo ran. This fits the price-suppression claim, though units were already declining before the increase (24,145 to 21,054 from week 1 to week 2), so the evidence is not conclusive.
+
+======================================================================
+WEEK 6
+======================================================================
+  East   revenue     34,256  (-10.7% WoW)
+  North  revenue     57,698  (+0.1% WoW)
+  South  revenue     57,028  (-0.4% WoW)
+  West   revenue     58,127  (+0.6% WoW)
+
+--- FLAGGED: East revenue -10.7% WoW ---
+  3 active belief(s) in memory; testing against new data.
+
+  Belief: "Price increase (2.82 to 3.08) is suppressing units and revenue."  (conf 0.90)
+    data checked [avg_price]: wk1=2.84  wk2=2.82  wk3=3.08  wk4=3.08  wk5=3.08  wk6=3.1
+    revenue for context:  wk1=58,158.55  wk2=50,370.42  wk3=47,729.11  wk4=42,392.93  wk5=38,376.61  wk6=34,255.67
+    → REINFORCE  conf 0.90 → 0.99
+      reason: Avg price held at 3.08-3.10 (about +9-10% vs 2.82) through week 6 with no promo, while units fell another 11.1% (14,660 to 13,030) and revenue dropped to 34,256 despite stable distribution (949). Units were already falling before the increase, so price is not the sole driver, but the data is consistent with continued suppression.
+
+  Belief: "Price increase to 3.08 reduced unit demand in East."  (conf 0.75)
+    data checked [avg_price]: wk1=2.84  wk2=2.82  wk3=3.08  wk4=3.08  wk5=3.08  wk6=3.1
+    revenue for context:  wk1=58,158.55  wk2=50,370.42  wk3=47,729.11  wk4=42,392.93  wk5=38,376.61  wk6=34,255.67
+    → REINFORCE  conf 0.75 → 0.90
+      reason: Avg price stepped up from 2.82 to 3.08 in week 3 and reached 3.10 in week 6, while units kept falling (18,293 to 13,030) with distribution recovered (949) and no promo. Units were already falling before the increase (24,145 to 21,054), so the price effect is not cleanly isolated, but the data does not refute the claim.
+
+  Belief: "Price increase in week 3 (2.82 to 3.08) is suppressing unit volume and revenue."  (conf 0.75)
+    data checked [avg_price]: wk1=2.84  wk2=2.82  wk3=3.08  wk4=3.08  wk5=3.08  wk6=3.1
+    revenue for context:  wk1=58,158.55  wk2=50,370.42  wk3=47,729.11  wk4=42,392.93  wk5=38,376.61  wk6=34,255.67
+    → NO_CHANGE
+      reason: Price rose 9.2% in week 3 (2.82 to 3.08) and held at 3.10 in week 6, but units were already falling before the increase (24,145 to 21,054, -12.8%, in week 2). Since the decline continued at a similar pace afterward (about -10% per week), the step-up in price does not clearly explain it, so the claim is neither confirmed nor refuted.
+
+======================================================================
+FINAL BELIEFS
+======================================================================
+  East   superseded   0.10  [units] Fewer units are selling because demand or traffic dropped.
+  East   superseded   0.10  [avg_price] Lower realized prices or discounting eroded revenue per unit.
+  East   superseded   0.25  [distribution_points] Lost store or channel presence reduced availability in East.
+  East   superseded   0.20  [distribution_points] Lost distribution (fewer points of distribution) is driving the unit and revenue decline.
+  East   superseded   0.20  [distribution_points] Loss of distribution points reduced unit volume and revenue.
+  East   active       0.99  [avg_price] Price increase (2.82 to 3.08) is suppressing units and revenue.
+  East   active       0.90  [avg_price] Price increase to 3.08 reduced unit demand in East.
+  East   active       0.75  [avg_price] Price increase in week 3 (2.82 to 3.08) is suppressing unit volume and revenue.
+
+found_true_cause: True
+score: 85.0  {'true_cause_found': 35, 'timeliness': 25.0, 'no_wrong_active': 20, 'no_non_causal': 5, 'no_duplicates': 0}
+Saved log to runs/run_20261011_211237.txt and summary to runs collection.

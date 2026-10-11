@@ -1,0 +1,115 @@
+Run started 2026-10-11 21:14:07 UTC, playbook v2 (human)
+Memory reset.
+
+======================================================================
+WEEK 2
+======================================================================
+  East   revenue     50,370  (-13.4% WoW)
+  North  revenue     57,666  (-0.2% WoW)
+  South  revenue     57,549  (-0.5% WoW)
+  West   revenue     57,535  (-2.4% WoW)
+
+--- FLAGGED: East revenue -13.4% WoW ---
+  No active beliefs; asking LLM for hypotheses:
+    + [avg_price] Higher average prices are suppressing demand in East.  (conf 0.5)
+    + [distribution_points] Shrinking distribution reduced product availability across East stores.  (conf 0.5)
+    + [promo_active] Promotional activity ended, removing the week-1 sales lift.  (conf 0.5)
+
+  Belief: "Higher average prices are suppressing demand in East."  (conf 0.50)
+    data checked [avg_price]: wk1=2.84  wk2=2.82
+    revenue for context:  wk1=58,158.55  wk2=50,370.42
+    → CONTRADICT (replacement already covered by an active belief)  conf 0.50 → 0.10
+      reason: avg_price slipped from 2.84 to 2.82, so it is not above its week-1 baseline and cannot explain the 13.4% revenue drop. Distribution points fell from 947 to 837 (about -11.6%), closely matching the revenue decline.
+
+  Belief: "Shrinking distribution reduced product availability across East stores."  (conf 0.50)
+    data checked [distribution_points]: wk1=947  wk2=837
+    revenue for context:  wk1=58,158.55  wk2=50,370.42
+    → REINFORCE  conf 0.50 → 0.65
+      reason: Distribution_points fell from 947 to 837 (about -11.6%), well below its week-1 baseline, while revenue dropped about 13.4% (58,159 to 50,370). Price (2.84 to 2.82) and promo (inactive both weeks) show no alternative driver.
+
+  Belief: "Promotional activity ended, removing the week-1 sales lift."  (conf 0.50)
+    data checked [promo_active]: wk1=no  wk2=no
+    revenue for context:  wk1=58,158.55  wk2=50,370.42
+    → CONTRADICT (replacement already covered by an active belief)  conf 0.50 → 0.10
+      reason: promo_active was false in both week 1 and week 2, so there was no promo ending and the claim is refuted. Distribution_points fell from 947 to 837 (-11.6%) while revenue dropped 13.4% (58,159 to 50,370), and avg_price is flat (2.84 to 2.82).
+
+======================================================================
+WEEK 3
+======================================================================
+  East   revenue     47,729  (-5.2% WoW)
+  North  revenue     57,240  (-0.7% WoW)
+  South  revenue     58,133  (+1.0% WoW)
+  West   revenue     57,201  (-0.6% WoW)
+
+--- FLAGGED: East revenue -5.2% WoW ---
+  1 active belief(s) in memory; testing against new data.
+
+  Belief: "Shrinking distribution reduced product availability across East stores."  (conf 0.65)
+    data checked [distribution_points]: wk1=947  wk2=837  wk3=843
+    revenue for context:  wk1=58,158.55  wk2=50,370.42  wk3=47,729.11
+    → REINFORCE  conf 0.65 → 0.80
+      reason: Distribution_points is still well below its week-1 baseline (843 vs 947, about -11%) in week 3, while revenue fell further to 47,729 (about -18% vs week 1). The driver remains off baseline in the direction that explains the decline, so the belief holds even though the price rise to 3.08 may be an added factor.
+
+======================================================================
+WEEK 4
+======================================================================
+  East   revenue     42,393  (-11.2% WoW)
+  North  revenue     57,178  (-0.1% WoW)
+  South  revenue     58,198  (+0.1% WoW)
+  West   revenue     57,733  (+0.9% WoW)
+
+--- FLAGGED: East revenue -11.2% WoW ---
+  1 active belief(s) in memory; testing against new data.
+
+  Belief: "Shrinking distribution reduced product availability across East stores."  (conf 0.80)
+    data checked [distribution_points]: wk1=947  wk2=837  wk3=843  wk4=951
+    revenue for context:  wk1=58,158.55  wk2=50,370.42  wk3=47,729.11  wk4=42,392.93
+    → SUPERSEDE  old conf 0.80 → superseded
+      new belief: [avg_price] "Higher average price in East reduced demand and revenue."  (conf 0.60)
+      reason: Distribution_points has recovered to 951 in week 4 (above the week-1 baseline of 947), yet revenue kept falling to 42,393 (about -27% vs week 1), so the belief is refuted. Avg_price rose from 2.84 to 3.08 in weeks 3-4 and stays elevated as revenue declines, which is a better explanation.
+
+======================================================================
+WEEK 5
+======================================================================
+  East   revenue     38,377  (-9.5% WoW)
+  North  revenue     57,645  (+0.8% WoW)
+  South  revenue     57,278  (-1.6% WoW)
+  West   revenue     57,761  (+0.0% WoW)
+
+--- FLAGGED: East revenue -9.5% WoW ---
+  1 active belief(s) in memory; testing against new data.
+
+  Belief: "Higher average price in East reduced demand and revenue."  (conf 0.60)
+    data checked [avg_price]: wk1=2.84  wk2=2.82  wk3=3.08  wk4=3.08  wk5=3.08
+    revenue for context:  wk1=58,158.55  wk2=50,370.42  wk3=47,729.11  wk4=42,392.93  wk5=38,376.61
+    → REINFORCE  conf 0.60 → 0.75
+      reason: Avg_price is still 3.08 in week 5, about 8% above the week-1 baseline of 2.84, and revenue keeps falling (58,159 to 38,377, about -34%). Distribution is back at baseline (953 vs 947) and no promo is active, so price remains the best-supported driver.
+
+======================================================================
+WEEK 6
+======================================================================
+  East   revenue     34,256  (-10.7% WoW)
+  North  revenue     57,698  (+0.1% WoW)
+  South  revenue     57,028  (-0.4% WoW)
+  West   revenue     58,127  (+0.6% WoW)
+
+--- FLAGGED: East revenue -10.7% WoW ---
+  1 active belief(s) in memory; testing against new data.
+
+  Belief: "Higher average price in East reduced demand and revenue."  (conf 0.75)
+    data checked [avg_price]: wk1=2.84  wk2=2.82  wk3=3.08  wk4=3.08  wk5=3.08  wk6=3.1
+    revenue for context:  wk1=58,158.55  wk2=50,370.42  wk3=47,729.11  wk4=42,392.93  wk5=38,376.61  wk6=34,255.67
+    → REINFORCE  conf 0.75 → 0.90
+      reason: Avg_price is still elevated at 3.10 in week 6, about 9% above the week-1 baseline of 2.84, while revenue keeps falling (58,159 to 34,256, about -41%). Distribution is at baseline (949 vs 947) and no promo is active, so price remains the best-supported driver.
+
+======================================================================
+FINAL BELIEFS
+======================================================================
+  East   contradicted 0.10  [avg_price] Higher average prices are suppressing demand in East.
+  East   superseded   0.40  [distribution_points] Shrinking distribution reduced product availability across East stores.
+  East   contradicted 0.10  [promo_active] Promotional activity ended, removing the week-1 sales lift.
+  East   active       0.90  [avg_price] Higher average price in East reduced demand and revenue.
+
+found_true_cause: True
+score: 91.7  {'true_cause_found': 35, 'timeliness': 16.7, 'no_wrong_active': 20, 'no_non_causal': 10, 'no_duplicates': 10}
+Saved log to runs/run_20261011_211407.txt and summary to runs collection.

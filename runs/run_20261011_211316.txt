@@ -1,0 +1,167 @@
+Run started 2026-10-11 21:13:16 UTC, playbook v0 (human)
+Memory reset.
+
+======================================================================
+WEEK 2
+======================================================================
+  East   revenue     50,370  (-13.4% WoW)
+  North  revenue     57,666  (-0.2% WoW)
+  South  revenue     57,549  (-0.5% WoW)
+  West   revenue     57,535  (-2.4% WoW)
+
+--- FLAGGED: East revenue -13.4% WoW ---
+  No active beliefs; asking LLM for hypotheses:
+    + [units] Fewer units are selling, indicating a demand or volume problem.  (conf 0.5)
+    + [avg_price] Lower average selling price is eroding revenue despite stable volume.  (conf 0.5)
+    + [distribution_points] Reduced distribution points are limiting product availability in East.  (conf 0.5)
+
+  Belief: "Fewer units are selling, indicating a demand or volume problem."  (conf 0.50)
+    data checked [units]: wk1=24,145  wk2=21,054
+    revenue for context:  wk1=58,158.55  wk2=50,370.42
+    → REINFORCE  conf 0.50 → 0.65
+      reason: Units fell from 24,145 to 21,054 (-12.8%), nearly matching the 13.4% revenue drop, while avg price was nearly flat (2.84 to 2.82), so the decline is volume-driven. Distribution points also fell 11.6% (947 to 837), which may be the underlying cause of the volume loss.
+
+  Belief: "Lower average selling price is eroding revenue despite stable volume."  (conf 0.50)
+    data checked [avg_price]: wk1=2.84  wk2=2.82
+    revenue for context:  wk1=58,158.55  wk2=50,370.42
+    → SUPERSEDE  old conf 0.50 → superseded
+      new belief: [distribution_points] "Lost distribution points are driving the volume and revenue decline."  (conf 0.60)
+      reason: Avg price barely moved (2.84 to 2.82, -0.7%), so price does not explain the 13.4% revenue drop. Units fell 12.8% (24145 to 21054) alongside distribution points down 11.6% (947 to 837), pointing to lost distribution driving volume.
+
+  Belief: "Reduced distribution points are limiting product availability in East."  (conf 0.50)
+    data checked [distribution_points]: wk1=947  wk2=837
+    revenue for context:  wk1=58,158.55  wk2=50,370.42
+    → REINFORCE  conf 0.50 → 0.65
+      reason: Distribution points fell from 947 to 837 (-11.6%), closely tracking the units drop of 12.8% (24145 to 21054) and the revenue decline of 13.4%. Price (2.84 to 2.82) and promo status (none) were essentially unchanged, so availability is the most plausible driver.
+
+======================================================================
+WEEK 3
+======================================================================
+  East   revenue     47,729  (-5.2% WoW)
+  North  revenue     57,240  (-0.7% WoW)
+  South  revenue     58,133  (+1.0% WoW)
+  West   revenue     57,201  (-0.6% WoW)
+
+--- FLAGGED: East revenue -5.2% WoW ---
+  3 active belief(s) in memory; testing against new data.
+
+  Belief: "Fewer units are selling, indicating a demand or volume problem."  (conf 0.65)
+    data checked [units]: wk1=24,145  wk2=21,054  wk3=18,293
+    revenue for context:  wk1=58,158.55  wk2=50,370.42  wk3=47,729.11
+    → REINFORCE  conf 0.65 → 0.80
+      reason: Units fell again from 21,054 to 18,293 (-13.1%) in week 3, and are down 24.2% since week 1 (24,145). Revenue fell less (-5.2%) only because avg price rose to 3.08, so the volume decline is still the main driver.
+
+  Belief: "Reduced distribution points are limiting product availability in East."  (conf 0.65)
+    data checked [distribution_points]: wk1=947  wk2=837  wk3=843
+    revenue for context:  wk1=58,158.55  wk2=50,370.42  wk3=47,729.11
+    → NO_CHANGE
+      reason: Distribution points fell 947 to 837 in week 2 and were flat at 843 in week 3 (+0.7%), yet units kept dropping (21054 to 18293, -13.1%) and revenue fell a further 5.2%. Availability explains the week 2 drop but not week 3, where the price rise (2.82 to 3.08, +9.2%) is the likelier driver; this is partial support, not refutation.
+
+  Belief: "Lost distribution points are driving the volume and revenue decline."  (conf 0.60)
+    data checked [distribution_points]: wk1=947  wk2=837  wk3=843
+    revenue for context:  wk1=58,158.55  wk2=50,370.42  wk3=47,729.11
+    → SUPERSEDE  old conf 0.60 → superseded
+      new belief: [avg_price] "Price increase is suppressing unit volume and revenue."  (conf 0.60)
+      reason: Distribution points stabilized in week 3 (837 to 843, +0.7%) while units fell a further 13.1% (21054 to 18293) and revenue fell 5.2%. Avg price jumped 9.2% (2.82 to 3.08), so the continued volume decline fits a price increase better than lost distribution.
+
+======================================================================
+WEEK 4
+======================================================================
+  East   revenue     42,393  (-11.2% WoW)
+  North  revenue     57,178  (-0.1% WoW)
+  South  revenue     58,198  (+0.1% WoW)
+  West   revenue     57,733  (+0.9% WoW)
+
+--- FLAGGED: East revenue -11.2% WoW ---
+  3 active belief(s) in memory; testing against new data.
+
+  Belief: "Fewer units are selling, indicating a demand or volume problem."  (conf 0.80)
+    data checked [units]: wk1=24,145  wk2=21,054  wk3=18,293  wk4=16,266
+    revenue for context:  wk1=58,158.55  wk2=50,370.42  wk3=47,729.11  wk4=42,392.93
+    → REINFORCE  conf 0.80 → 0.95
+      reason: Units fell again from 18,293 to 16,266 in week 4 (-11.1%), and are down 32.6% since week 1 (24,145). Revenue fell 11.2% (47,729 to 42,393) while avg price was flat at 3.08, so the decline is still volume-driven even though distribution recovered to 951.
+
+  Belief: "Reduced distribution points are limiting product availability in East."  (conf 0.65)
+    data checked [distribution_points]: wk1=947  wk2=837  wk3=843  wk4=951
+    revenue for context:  wk1=58,158.55  wk2=50,370.42  wk3=47,729.11  wk4=42,392.93
+    → SUPERSEDE  old conf 0.65 → superseded
+      new belief: [avg_price] "Price increase to 3.08 is suppressing unit demand in East."  (conf 0.60)
+      reason: Distribution points recovered to 951 by week 4 (above week 1's 947), yet units kept falling (24145 to 16266, -32.6%) and revenue fell to 42,393. Availability cannot explain the continued decline. Avg price rose from 2.82 to 3.08 in week 3 and stayed there, which is a more plausible driver of weaker demand.
+
+  Belief: "Price increase is suppressing unit volume and revenue."  (conf 0.60)
+    data checked [avg_price]: wk1=2.84  wk2=2.82  wk3=3.08  wk4=3.08
+    revenue for context:  wk1=58,158.55  wk2=50,370.42  wk3=47,729.11  wk4=42,392.93
+    → REINFORCE  conf 0.60 → 0.75
+      reason: Avg price rose 9.2% (2.82 to 3.08) in week 3 and held in week 4, while units kept falling (18293 to 16266, -11.1%) and revenue fell to 42,393, even though distribution recovered (843 to 951) with no promo. Recovered distribution should have supported volume, so the continued decline is consistent with price suppression.
+
+======================================================================
+WEEK 5
+======================================================================
+  East   revenue     38,377  (-9.5% WoW)
+  North  revenue     57,645  (+0.8% WoW)
+  South  revenue     57,278  (-1.6% WoW)
+  West   revenue     57,761  (+0.0% WoW)
+
+--- FLAGGED: East revenue -9.5% WoW ---
+  3 active belief(s) in memory; testing against new data.
+
+  Belief: "Fewer units are selling, indicating a demand or volume problem."  (conf 0.95)
+    data checked [units]: wk1=24,145  wk2=21,054  wk3=18,293  wk4=16,266  wk5=14,660
+    revenue for context:  wk1=58,158.55  wk2=50,370.42  wk3=47,729.11  wk4=42,392.93  wk5=38,376.61
+    → REINFORCE  conf 0.95 → 0.99
+      reason: Units fell again from 16,266 to 14,660 in week 5 (-9.9%), down 39.3% since week 1 (24,145). Revenue fell 9.5% (42,393 to 38,377) with avg price flat at 3.08 and no promo, so the decline is still volume-driven, even with distribution steady at 953.
+
+  Belief: "Price increase is suppressing unit volume and revenue."  (conf 0.75)
+    data checked [avg_price]: wk1=2.84  wk2=2.82  wk3=3.08  wk4=3.08  wk5=3.08
+    revenue for context:  wk1=58,158.55  wk2=50,370.42  wk3=47,729.11  wk4=42,392.93  wk5=38,376.61
+    → REINFORCE  conf 0.75 → 0.90
+      reason: Avg price stepped up 9.2% (2.82 to 3.08) in week 3 and held through week 5, while units kept falling (16266 to 14660, -9.9% in week 5) and revenue dropped to 38,377 despite distribution holding near 953 with no promo. This is consistent with price suppressing volume, though units were already falling before the increase, so the causal link is not clean.
+
+  Belief: "Price increase to 3.08 is suppressing unit demand in East."  (conf 0.60)
+    data checked [avg_price]: wk1=2.84  wk2=2.82  wk3=3.08  wk4=3.08  wk5=3.08
+    revenue for context:  wk1=58,158.55  wk2=50,370.42  wk3=47,729.11  wk4=42,392.93  wk5=38,376.61
+    → REINFORCE  conf 0.60 → 0.75
+      reason: Avg price rose from 2.82 to 3.08 (+9.2%) in week 3 and held. Units fell from 21,054 to 14,660 (-30%) over weeks 2-5 while distribution recovered (837 to 953) and no promo was active, so availability and promotion do not explain the drop. Units were already falling before the increase, so the price effect is likely partial.
+
+======================================================================
+WEEK 6
+======================================================================
+  East   revenue     34,256  (-10.7% WoW)
+  North  revenue     57,698  (+0.1% WoW)
+  South  revenue     57,028  (-0.4% WoW)
+  West   revenue     58,127  (+0.6% WoW)
+
+--- FLAGGED: East revenue -10.7% WoW ---
+  3 active belief(s) in memory; testing against new data.
+
+  Belief: "Fewer units are selling, indicating a demand or volume problem."  (conf 0.99)
+    data checked [units]: wk1=24,145  wk2=21,054  wk3=18,293  wk4=16,266  wk5=14,660  wk6=13,030
+    revenue for context:  wk1=58,158.55  wk2=50,370.42  wk3=47,729.11  wk4=42,392.93  wk5=38,376.61  wk6=34,255.67
+    → REINFORCE  conf 0.99 → 0.99
+      reason: Units fell again from 14,660 to 13,030 in week 6 (-11.1%), down 46% since week 1 (24,145). Revenue fell 10.7% with avg price roughly flat (3.08 to 3.10), no promo, and distribution steady at 949, so the decline is volume-driven.
+
+  Belief: "Price increase is suppressing unit volume and revenue."  (conf 0.90)
+    data checked [avg_price]: wk1=2.84  wk2=2.82  wk3=3.08  wk4=3.08  wk5=3.08  wk6=3.1
+    revenue for context:  wk1=58,158.55  wk2=50,370.42  wk3=47,729.11  wk4=42,392.93  wk5=38,376.61  wk6=34,255.67
+    → REINFORCE  conf 0.90 → 0.99
+      reason: Avg price rose 9.2% in week 3 (2.82 to 3.08) and held at 3.10 in week 6, while units kept falling (14660 to 13030, -11.1%) and revenue fell to 34,256 with distribution flat (~949) and no promo. Units were already declining before the price step (24145 to 18293 over weeks 1-3), so the causal link is not clean, but the data is consistent with the claim.
+
+  Belief: "Price increase to 3.08 is suppressing unit demand in East."  (conf 0.75)
+    data checked [avg_price]: wk1=2.84  wk2=2.82  wk3=3.08  wk4=3.08  wk5=3.08  wk6=3.1
+    revenue for context:  wk1=58,158.55  wk2=50,370.42  wk3=47,729.11  wk4=42,392.93  wk5=38,376.61  wk6=34,255.67
+    → REINFORCE  conf 0.75 → 0.90
+      reason: Avg price stayed at 3.08-3.10 (up ~9% from 2.82) while units fell from 14,660 to 13,030 in weeks 5-6, with distribution stable (~950) and no promo. Units were already falling before the increase (24,145 to 18,293 in weeks 1-3), so price is only a partial explanation, but the sustained price level is consistent with continued demand suppression.
+
+======================================================================
+FINAL BELIEFS
+======================================================================
+  East   active       0.99  [units] Fewer units are selling, indicating a demand or volume problem.
+  East   superseded   0.10  [avg_price] Lower average selling price is eroding revenue despite stable volume.
+  East   superseded   0.25  [distribution_points] Reduced distribution points are limiting product availability in East.
+  East   superseded   0.20  [distribution_points] Lost distribution points are driving the volume and revenue decline.
+  East   active       0.99  [avg_price] Price increase is suppressing unit volume and revenue.
+  East   active       0.90  [avg_price] Price increase to 3.08 is suppressing unit demand in East.
+
+found_true_cause: True
+score: 75.0  {'true_cause_found': 35, 'timeliness': 25.0, 'no_wrong_active': 10, 'no_non_causal': 5, 'no_duplicates': 0}
+Saved log to runs/run_20261011_211316.txt and summary to runs collection.

@@ -1,4 +1,6 @@
-"""Planted data scenarios. Each defines its true cause, which scoring reads from here.
+"""Planted data scenarios. Each defines its true cause and the week it first appears in the data,
+which scoring reads from here. (The week is configured rather than detected because some metrics,
+like avg_price, carry noise every week.)
 
 generate_data.py records the scenario it loaded in the database's `scenario` collection,
 so scoring always matches the data actually in that database.
@@ -12,6 +14,7 @@ SCENARIOS = {
                        "(true cause), promo in week 4 doesn't help.",
         "true_cause_region": "West",
         "true_cause_metric": "distribution_points",
+        "cause_first_week": 3,
     },
     "B": {
         "name": "B",
@@ -20,6 +23,16 @@ SCENARIOS = {
                        "Price flat.",
         "true_cause_region": "South",
         "true_cause_metric": "promo_active",
+        "cause_first_week": 3,
+    },
+    "C": {
+        "name": "C",
+        "description": "East: distribution dips ~12% in weeks 2-3 and recovers in week 4 (misleading first "
+                       "guess). avg_price rises ~9% from week 3 and stays up; customers drift away over the "
+                       "following weeks (true cause). No promo.",
+        "true_cause_region": "East",
+        "true_cause_metric": "avg_price",
+        "cause_first_week": 3,
     },
 }
 DEFAULT_SCENARIO = "A"

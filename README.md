@@ -117,9 +117,19 @@ v0 usually *does* find the cause; it loses points for clutter. It tests symptoms
 
 ---
 
-## Generalization (held-out scenario B)
+## Generalization (held-out scenarios B and C)
 
-Playbooks were learned and tuned on scenario A only. To check whether they carry over, `evaluate.py` runs them frozen (no reflection) on **scenario B**, which they never saw, in a separate database (`longview_holdout`).
+Playbooks were learned and tuned on scenario A only. To check whether they carry over, `evaluate.py` runs them frozen (no reflection) on **scenarios B and C**, which they never saw, in a separate database (`longview_holdout`).
+
+| Version | Author | Scenario B mean | Scenario C mean | found_true_cause (B + C) |
+|---|---|---:|---:|---:|
+| v0 | human (blank) | 65.0 | 80.0 | 4/4 |
+| v2 | human | 100.0 | **91.7** | 4/4 |
+| v10 | agent | 100.0 | 87.5 | 4/4 |
+
+**On the held-out scenarios, the agent-written v10 did no better than the human v2, and slightly worse on C.**
+
+### Scenario B: promo ends
 
 **Scenario B:** South runs a long promo in weeks 1–2. It ends in week 3 and promo-driven demand unwinds through week 6, so revenue falls −9%, −12%, −8% and −7% week over week. **True cause: `promo_active`.** There's a one-week distribution dip (about −5%) in week 4 that recovers in week 5, as a red herring. Price is flat and other regions are stable. The true cause is read from the scenario config, not hard-coded.
 
@@ -136,9 +146,30 @@ Playbooks were learned and tuned on scenario A only. To check whether they carry
 - **v10 was faster, but the score can't show it.** v10 was confident in week 3, the week the promo ended; v2 got there in week 4. Both earn full timeliness points, so the faster reaction isn't rewarded.
 - **v0 still finds the cause but clutters memory,** just as in scenario A: it tests symptoms, leaves wrong beliefs active and creates a duplicate. The gap between v0 and the guarded playbooks is the same kind of gain as in training.
 - **Scenario B is easier than A.** There's no misleading first guess backed by a moving metric: the promo is the only driver that changes when the decline starts, and the distribution dip arrives after the promo belief already exists. This test checks that the playbooks don't overfit. It isn't a hard test of reasoning.
-- **Small sample:** 2 runs per version on one held-out scenario.
+### Scenario C: a misleading first guess, then a price rise
 
-Run it with `python evaluate.py`. It writes only to `longview_holdout` and refuses to run against `longview`.
+**Scenario C:** East's store count dips about 12% in weeks 2–3 (947 → 837) and recovers in week 4 (951). That's the misleading first guess. avg_price rises about 9% from week 3 (2.84 → 3.08) and stays up, and customers drift away over the following weeks. **True cause: `avg_price`.** No promo runs. Revenue falls −13%, −5%, −11%, −10% and −11% week over week, so the decline continues after the stores come back.
+
+| Version | Author | Mean score | Runs | found_true_cause | Confident in price |
+|---|---|---:|---|---:|---|
+| v0 | human (blank) | 80.0 | 85.0, 75.0 | 2/2 | week 4, week 4 |
+| v2 | human | 91.7 | 91.7, 91.7 | 2/2 | week 5, week 5 |
+| v10 | agent | **87.5** | 91.7, 83.3 | 2/2 | week 5, week 6 |
+
+*64 LLM calls in total. Output: `notes/holdout_scenario_c.txt`.*
+
+**What happened (from the run logs):**
+- **v2 and v10 behaved the same at first.** In week 2 they correctly rejected price (flat then) and committed to distribution. In week 3 price jumped, but they kept distribution because the stores were still about 11% below week 1. Both switched to price only in **week 4**, once the stores had recovered. Their one-belief-per-metric discipline, plus "judge a belief on its own metric", makes them slow to drop a first guess that is still partly true.
+- **v10 didn't apply its own rule.** Its rule "a lever that stayed flat cannot be the cause" should have fired in week 3: the stores were flat from week 2 (837 → 843) while revenue fell. It reinforced distribution instead. In one run it also made a NO_CHANGE in week 5, so it became confident a week later (83.3).
+- **v0 was the fastest to find price.** With no duplicate guard it carried several parallel beliefs, and one of them switched to price in **week 3**. It still lost points for clutter: symptom beliefs, duplicates, and in one run a wrong belief left active.
+- **The trade-off the guardrails make:** a cleaner memory, but a slower switch when the first guess is still partly true. The self-improvement loop can't see this, because it trained only on scenario A, where the guardrails cost nothing.
+
+### Caveats
+- **Small sample:** 2 runs per version per held-out scenario; v10's 4.2-point gap on C comes from a single run.
+- **Hand-designed scenarios:** both were written by me. B turned out to be easy (no misleading guess backed by a moving metric). C was harder and separated the playbooks.
+- **Configured cause week:** each scenario records the week its cause first appears (`cause_first_week`), and timeliness uses that. It's configured rather than detected because avg_price carries about ±1% noise every week.
+
+Run it with `python evaluate.py --scenario B` or `--scenario C`. It writes only to `longview_holdout` and refuses to run against `longview`.
 
 ---
 

@@ -12,6 +12,12 @@ Scenario B (python generate_data.py --scenario B), a held-out test the playbooks
   through week 6 (true cause: promo_active).
 - Week 4: South distribution dips ~5% for one week and recovers in week 5 (red herring).
 - Price flat. All other regions, West included, are stable.
+
+Scenario C (--scenario C), a second held-out test:
+- East distribution dips ~12% in weeks 2-3 and recovers in week 4 (misleading first guess).
+- East avg_price rises ~9% from week 3 and stays up; customers drift away over the following
+  weeks, so revenue keeps falling after distribution recovers (true cause: avg_price).
+- No promo. All other regions are stable.
 """
 import argparse
 import random
@@ -44,6 +50,13 @@ SOUTH_DEMAND = {1: 1.30, 2: 1.30, 3: 1.17, 4: 1.08, 5: 0.96, 6: 0.90}
 SOUTH_DIST_DIP_WEEK = 4
 SOUTH_DIST_DIP = 0.95
 
+# Scenario C (East). Distribution dip weeks 2-3; price rise from week 3 with growing demand loss.
+EAST_DIST_DIP_WEEKS = {2, 3}
+EAST_DIST_DIP = 0.88
+EAST_PRICE_RISE = 1.09
+EAST_PRICE_RISE_START = 3
+EAST_DEMAND = {1: 1.0, 2: 1.0, 3: 0.85, 4: 0.68, 5: 0.61, 6: 0.55}  # customers drift away after the rise
+
 
 def generate(rng, scenario="A"):
     rows = []
@@ -56,6 +69,13 @@ def generate(rng, scenario="A"):
                     promo = week in SOUTH_PROMO_WEEKS
                     units_per_store = base_units_per_store * rng.uniform(0.985, 1.015) * SOUTH_DEMAND[week]
                     rows.append(_row(week, region, product, dist, units_per_store, price, promo, rng))
+                    continue
+                if scenario == "C" and region == "East":
+                    dist = round(base_dist * rng.uniform(0.99, 1.01)
+                                 * (EAST_DIST_DIP if week in EAST_DIST_DIP_WEEKS else 1))
+                    units_per_store = base_units_per_store * rng.uniform(0.985, 1.015) * EAST_DEMAND[week]
+                    price_now = price * (EAST_PRICE_RISE if week >= EAST_PRICE_RISE_START else 1)
+                    rows.append(_row(week, region, product, dist, units_per_store, price_now, False, rng))
                     continue
                 if region == "West" and scenario == "A":
                     weeks_of_decline = max(0, week - WEST_DIST_DROP_START + 1)

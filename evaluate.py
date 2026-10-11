@@ -1,10 +1,10 @@
 """Held-out generalization test: frozen playbooks on scenario B, in a separate database.
 
 Runs entirely in LONGVIEW_DB (default longview_holdout), so the demo database is never touched.
-Copies the playbook collection from the main `longview` database, loads scenario B, then runs
-each playbook version frozen (no reflection) several times and reports mean score.
+Copies the playbook collection from the main `longview` database, loads a held-out scenario
+(B or C), then runs each playbook version frozen (no reflection) several times and reports mean score.
 
-Usage: python evaluate.py [--versions 0 2 10] [--repeats 2]
+Usage: python evaluate.py [--scenario B|C] [--versions 0 2 10] [--repeats 2]
 """
 import os
 
@@ -25,7 +25,7 @@ from run import execute_run  # noqa: E402
 from scenarios import SCENARIOS  # noqa: E402
 
 SOURCE_DB = "longview"
-SCENARIO = "B"
+HELD_OUT = ["B", "C"]
 WEEKS = list(range(2, 7))
 console = Console()
 
@@ -42,13 +42,15 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--versions", type=int, nargs="+", default=[0, 2, 10])
     parser.add_argument("--repeats", type=int, default=2)
+    parser.add_argument("--scenario", choices=HELD_OUT, default="B")
     args = parser.parse_args()
+    scenario = args.scenario
 
     llm.usage_log = lambda msg: None
-    console.rule(f"[bold]Held-out test · database {DB_NAME} · scenario {SCENARIO}")
-    console.print(f"[dim]{SCENARIOS[SCENARIO]['description']}[/]")
+    console.rule(f"[bold]Held-out test · database {DB_NAME} · scenario {scenario}")
+    console.print(f"[dim]{SCENARIOS[scenario]['description']}[/]")
     console.print(f"Copied {copy_playbooks()} playbook versions from {SOURCE_DB}.")
-    load(SCENARIO)
+    load(scenario)
 
     rows = []
     for v in args.versions:
@@ -67,7 +69,7 @@ def main():
                           f"[dim]{llm.stats['calls'] - before} calls · {doc['log_file']}[/]")
         rows.append((v, pb.get("author", "?"), scores, found))
 
-    table = Table(title=f"Scenario {SCENARIO} (held out) · {args.repeats} runs per version", title_justify="left")
+    table = Table(title=f"Scenario {scenario} (held out) · {args.repeats} runs per version", title_justify="left")
     for col, kw in [("Version", {"justify": "right"}), ("Author", {}), ("Mean score", {"justify": "right"}),
                     ("Runs", {}), (f"found_true_cause (x/{args.repeats})", {"justify": "right"})]:
         table.add_column(col, **kw)

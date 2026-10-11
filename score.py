@@ -5,7 +5,7 @@ The true cause (region + metric) comes from the scenario recorded with the data 
 Points (max 100):
   35  true cause found (active belief on the true-cause region + metric, confidence >= 0.7)
   25  timeliness: full marks if that belief was reinforced to >= 0.7 by the week after the cause
-      first appeared in the data (its metric first left its week-1 value), losing an equal share
+      first appeared in the data (the scenario's cause_first_week), losing an equal share
       for each week later (see timeliness_points)
   20  minus 10 per wrong belief still active at the end
   10  minus 5 per belief on a non-causal metric (units or revenue)
@@ -34,10 +34,9 @@ def _first_confident_week(beliefs, region, metric):
     return min(weeks) if weeks else None
 
 
-def _cause_first_visible_week(region, metric, last_week):
-    series = get_metric_series(region, metric, last_week)
-    baseline = series[0]["value"]
-    return next((p["week"] for p in series if p["value"] != baseline), None)
+def _cause_first_visible_week(scenario, last_week):
+    week = scenario.get("cause_first_week")
+    return week if week is not None and week <= last_week else None
 
 
 def _duplicates(beliefs):
@@ -78,7 +77,7 @@ def score_run(last_week):
     beliefs = get_beliefs()
     found = found_true_cause()
     first_week = _first_confident_week(beliefs, region, metric)
-    visible_week = _cause_first_visible_week(region, metric, last_week)
+    visible_week = _cause_first_visible_week(scenario, last_week)
     wrong_active = sum(1 for b in beliefs if b["status"] == ACTIVE and not (
         b["region"] == region and b["metric"] == metric))
     non_causal = sum(1 for b in beliefs if b["metric"] in NON_CAUSAL_METRICS)
