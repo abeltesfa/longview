@@ -117,6 +117,31 @@ v0 usually *does* find the cause; it loses points for clutter. It tests symptoms
 
 ---
 
+## Generalization (held-out scenario B)
+
+Playbooks were learned and tuned on scenario A only. To check whether they carry over, `evaluate.py` runs them frozen (no reflection) on **scenario B**, which they never saw, in a separate database (`longview_holdout`).
+
+**Scenario B:** South runs a long promo in weeks 1–2. It ends in week 3 and promo-driven demand unwinds through week 6, so revenue falls −9%, −12%, −8% and −7% week over week. **True cause: `promo_active`.** There's a one-week distribution dip (about −5%) in week 4 that recovers in week 5, as a red herring. Price is flat and other regions are stable. The true cause is read from the scenario config, not hard-coded.
+
+| Version | Author | Mean score | Runs | found_true_cause |
+|---|---|---:|---|---:|
+| v0 | human (blank) | 65.0 | 65.0, 65.0 | 2/2 |
+| v2 | human | 100.0 | 100.0, 100.0 | 2/2 |
+| v10 | agent | 100.0 | 100.0, 100.0 | 2/2 |
+
+*54 LLM calls in total. Output: `notes/holdout_scenario_b.txt`.*
+
+**What this shows, and what it doesn't:**
+- **The agent's rules carried over without hurting.** v10's playbook, written by the agent from scenario A runs, scored 100 on a different region, cause and red herring, the same as the human v2. One worry was that v10's rule "a lever that stayed flat cannot be the cause" would wrongly reject the promo after it ended, because promo_active stays flat (off) in weeks 4–6. It didn't.
+- **v10 was faster, but the score can't show it.** v10 was confident in week 3, the week the promo ended; v2 got there in week 4. Both earn full timeliness points, so the faster reaction isn't rewarded.
+- **v0 still finds the cause but clutters memory,** just as in scenario A: it tests symptoms, leaves wrong beliefs active and creates a duplicate. The gap between v0 and the guarded playbooks is the same kind of gain as in training.
+- **Scenario B is easier than A.** There's no misleading first guess backed by a moving metric: the promo is the only driver that changes when the decline starts, and the distribution dip arrives after the promo belief already exists. This test checks that the playbooks don't overfit. It isn't a hard test of reasoning.
+- **Small sample:** 2 runs per version on one held-out scenario.
+
+Run it with `python evaluate.py`. It writes only to `longview_holdout` and refuses to run against `longview`.
+
+---
+
 ## Raindrop integration
 
 **What's traced (`llm.py`):** each LLM call becomes one Raindrop event. It records the real prompt and reply, the model, token counts, stop reason, whether the JSON retry fired, and any error.
@@ -141,7 +166,7 @@ v0 usually *does* find the cause; it loses points for clutter. It tests symptoms
 - **Synthetic data, one planted scenario.** Six weeks, four regions, three products and one designed failure mode. The scorer knows the planted answer; real data has no ground truth.
 - **Run-to-run variance.** LLM claims and decisions vary; blank-slate v0 scored between 65 and 80 across four runs. Each candidate version is accepted on a single run.
 - **Human playbooks v1/v2** were written by me with AI coding assistance. They aren't independent domain-expert baselines.
-- **The scoring metric was revised once.** Timeliness first required confidence in the *same* week the cause appeared, which no run could reach: a belief can only gain confidence through a reinforcement on a later week. It now targets the following week. Stored runs were rescored exactly from their saved inputs.
+- **The scoring metric was revised once.** Timeliness first required confidence in the *same* week the cause appeared. In scenario A that couldn't happen, because the agent reaches the cause by superseding the pricing belief, and a replacement belief is first tested the following week. I first wrote that same-week confidence was impossible in general. That was wrong: the held-out test showed a brand-new hypothesis can reach 0.7 the week it's created. Timeliness now targets the following week, and same-week confidence still earns full marks. Stored runs were rescored exactly from their saved inputs.
 - **The reflector can infer the answer** from belief histories, where metric names are visible. Filters drop rules that name a region or pair a metric with a numeric threshold. These are pattern-based heuristics, not proof of generality.
 - **Parameter drift.** Before strict acceptance was added, tied scores let parameters creep to their clamp limits (v8: initial 0.65, boost 0.30).
 - **Older Raindrop SDK.** Python 3.9 limits `raindrop-ai` to 0.0.19, which has one event per call and no tracing spans.

@@ -93,6 +93,7 @@ def _track(event, playbook_version, system, user, output, meta, retried, error=N
             "input_tokens": meta.get("input_tokens", 0),
             "output_tokens": meta.get("output_tokens", 0),
             "stop_reason": meta.get("stop_reason") or "",
+            "db": os.environ.get("LONGVIEW_DB", "longview"),
         }
         if error:
             properties["error"] = error

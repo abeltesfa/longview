@@ -1,0 +1,34 @@
+───────────────────────────────────────────────────────── Held-out test · database longview_holdout · scenario B ─────────────────────────────────────────────────────────
+South: long-running promo active weeks 1-2 ends; promo-driven demand unwinds from week 3 (true cause). One-week distribution dip (~-5%) in week 4 is a red herring. Price 
+flat.
+Copied 11 playbook versions from longview.
+Inserted 72 documents into longview_holdout.weekly_sales (scenario B)
+
+Revenue by region and week
+Region         Wk 1       Wk 2       Wk 3       Wk 4       Wk 5       Wk 6    Wk1→6
+-----------------------------------------------------------------------------------
+North        57,756     57,666     57,240     57,178     57,645     57,698      -0%
+South        75,188     74,812     68,016     59,672     54,989     51,328     -32%
+East         58,159     57,220     58,418     57,234     57,773     57,086      -2%
+West         58,933     57,535     57,201     57,733     57,761     58,127      -1%
+  v0 run 1: score 65.0  found True  confident wk 4  {'true_cause_found': 35, 'timeliness': 25.0, 'no_wrong_active': 0, 'no_non_causal': 0, 'no_duplicates': 5}  13 calls ·
+runs/run_20261011_205912.txt
+  v0 run 2: score 65.0  found True  confident wk 4  {'true_cause_found': 35, 'timeliness': 25.0, 'no_wrong_active': 0, 'no_non_causal': 0, 'no_duplicates': 5}  13 calls ·
+runs/run_20261011_205941.txt
+  v2 run 1: score 100.0  found True  confident wk 4  {'true_cause_found': 35, 'timeliness': 25.0, 'no_wrong_active': 20, 'no_non_causal': 10, 'no_duplicates': 10}  7 
+calls · runs/run_20261011_210008.txt
+  v2 run 2: score 100.0  found True  confident wk 4  {'true_cause_found': 35, 'timeliness': 25.0, 'no_wrong_active': 20, 'no_non_causal': 10, 'no_duplicates': 10}  7 
+calls · runs/run_20261011_210024.txt
+  v10 run 1: score 100.0  found True  confident wk 3  {'true_cause_found': 35, 'timeliness': 25.0, 'no_wrong_active': 20, 'no_non_causal': 10, 'no_duplicates': 10}  7 
+calls · runs/run_20261011_210040.txt
+  v10 run 2: score 100.0  found True  confident wk 3  {'true_cause_found': 35, 'timeliness': 25.0, 'no_wrong_active': 20, 'no_non_causal': 10, 'no_duplicates': 10}  7 
+calls · runs/run_20261011_210056.txt
+Scenario B (held out) · 2 runs per version                               
+┏━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Version ┃ Author ┃ Mean score ┃ Runs         ┃ found_true_cause (x/2) ┃
+┡━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━┩
+│      v0 │ human  │       65.0 │ 65.0, 65.0   │                    2/2 │
+│      v2 │ human  │      100.0 │ 100.0, 100.0 │                    2/2 │
+│     v10 │ agent  │      100.0 │ 100.0, 100.0 │                    2/2 │
+└─────────┴────────┴────────────┴──────────────┴────────────────────────┘
+LLM usage: 54 calls · tokens in 63,563 / out 9,410

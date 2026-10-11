@@ -1,4 +1,4 @@
-"""MongoDB Atlas connection helper for the longview database."""
+"""MongoDB Atlas connection helper. Database name comes from LONGVIEW_DB (default: longview)."""
 import os
 
 from dotenv import load_dotenv
@@ -6,13 +6,13 @@ from pymongo import MongoClient
 
 load_dotenv()
 
-DB_NAME = "longview"
+DB_NAME = os.environ.get("LONGVIEW_DB", "longview")
 
 _client = None
 
 
-def get_db():
-    """Return the longview database, creating one shared client on first use."""
+def get_db(name=None):
+    """Return the configured database (or `name`), creating one shared client on first use."""
     global _client
     if _client is None:
         uri = os.environ.get("MONGODB_URI")
@@ -20,4 +20,4 @@ def get_db():
             raise RuntimeError("MONGODB_URI is not set (check your .env file)")
         _client = MongoClient(uri, serverSelectionTimeoutMS=10000)
         _client.admin.command("ping")  # fail fast if Atlas is unreachable
-    return _client[DB_NAME]
+    return _client[name or DB_NAME]

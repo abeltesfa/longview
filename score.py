@@ -1,14 +1,18 @@
 """Score a run from stored beliefs and sales data only (no LLM).
 
+The true cause (region + metric) comes from the scenario recorded with the data (scenarios.py).
+
 Points (max 100):
-  35  true cause found (active West belief on distribution_points, confidence >= 0.7)
+  35  true cause found (active belief on the true-cause region + metric, confidence >= 0.7)
   25  timeliness: full marks if that belief was reinforced to >= 0.7 by the week after the cause
-      first appeared in the data, losing an equal share for each week later (see timeliness_points)
+      first appeared in the data (its metric first left its week-1 value), losing an equal share
+      for each week later (see timeliness_points)
   20  minus 10 per wrong belief still active at the end
   10  minus 5 per belief on a non-causal metric (units or revenue)
   10  minus 5 per duplicate belief (created while another active belief had the same region + metric)
 """
-from agent import TRUE_CAUSE_METRIC, TRUE_CAUSE_MIN_CONFIDENCE, TRUE_CAUSE_REGION, found_true_cause
+from agent import found_true_cause
+from scenarios import TRUE_CAUSE_MIN_CONFIDENCE, active_scenario
 from analysis import get_metric_series
 from memory import ACTIVE, get_beliefs
 
@@ -22,18 +26,18 @@ def _retired_week(belief):
     return None
 
 
-def _first_confident_week(beliefs):
+def _first_confident_week(beliefs, region, metric):
     weeks = [h["week"] for b in beliefs
-             if b["region"] == TRUE_CAUSE_REGION and b["metric"] == TRUE_CAUSE_METRIC
+             if b["region"] == region and b["metric"] == metric
              for h in b["history"]
              if h["action"] == "reinforced" and h["new_confidence"] >= TRUE_CAUSE_MIN_CONFIDENCE]
     return min(weeks) if weeks else None
 
 
-def _cause_first_visible_week(last_week):
-    series = get_metric_series(TRUE_CAUSE_REGION, TRUE_CAUSE_METRIC, last_week)
+def _cause_first_visible_week(region, metric, last_week):
+    series = get_metric_series(region, metric, last_week)
     baseline = series[0]["value"]
-    return next((p["week"] for p in series if p["value"] < baseline), None)
+    return next((p["week"] for p in series if p["value"] != baseline), None)
 
 
 def _duplicates(beliefs):
@@ -52,11 +56,12 @@ def _duplicates(beliefs):
 def timeliness_points(confident_week, visible_week, last_week):
     """25 points for becoming confident on time, scaled down linearly for each week late.
 
-    "On time" is the week AFTER the cause first appears in the data, not the same week.
-    A belief only reaches 0.7 through reinforcement, and the agent tests a belief at most
-    once per week: the earliest it can see the driver move is the week it first moves (where
-    it creates or supersedes into a belief), and the earliest it can confirm it is the week
-    after. Scoring the same week as full marks would set a target no run can reach.
+    "On time" is the week AFTER the cause first appears in the data (same-week still earns full marks).
+    A belief only reaches 0.7 through reinforcement, at most once per week. A brand-new hypothesis
+    is tested in the week it is created, so same-week confidence is possible when the agent has no
+    belief yet. But when the agent reaches the cause by SUPERSEDING an earlier belief (the usual
+    path once it already holds a wrong one, as in scenario A), the replacement is first tested the
+    following week. Targeting the following week avoids penalizing an agent for changing its mind.
     """
     if confident_week is None or visible_week is None:
         return 0.0
@@ -68,12 +73,14 @@ def timeliness_points(confident_week, visible_week, last_week):
 
 
 def score_run(last_week):
+    scenario = active_scenario()
+    region, metric = scenario["true_cause_region"], scenario["true_cause_metric"]
     beliefs = get_beliefs()
     found = found_true_cause()
-    first_week = _first_confident_week(beliefs)
-    visible_week = _cause_first_visible_week(last_week)
+    first_week = _first_confident_week(beliefs, region, metric)
+    visible_week = _cause_first_visible_week(region, metric, last_week)
     wrong_active = sum(1 for b in beliefs if b["status"] == ACTIVE and not (
-        b["region"] == TRUE_CAUSE_REGION and b["metric"] == TRUE_CAUSE_METRIC))
+        b["region"] == region and b["metric"] == metric))
     non_causal = sum(1 for b in beliefs if b["metric"] in NON_CAUSAL_METRICS)
     duplicates = _duplicates(beliefs)
 
@@ -87,6 +94,7 @@ def score_run(last_week):
         "no_duplicates": max(0, 10 - 5 * duplicates),
     }
     return {
+        "scenario": scenario["name"],
         "score": round(sum(points.values()), 1),
         "points": points,
         "found_true_cause": found,

@@ -1,0 +1,147 @@
+Run started 2026-10-11 20:59:41 UTC, playbook v0 (human)
+Memory reset.
+
+======================================================================
+WEEK 2
+======================================================================
+  East   revenue     57,220  (-1.6% WoW)
+  North  revenue     57,666  (-0.2% WoW)
+  South  revenue     74,812  (-0.5% WoW)
+  West   revenue     57,535  (-2.4% WoW)
+  intervention recorded: South promo in week 2
+
+  No regions flagged.
+
+======================================================================
+WEEK 3
+======================================================================
+  East   revenue     58,418  (+2.1% WoW)
+  North  revenue     57,240  (-0.7% WoW)
+  South  revenue     68,016  (-9.1% WoW)
+  West   revenue     57,201  (-0.6% WoW)
+
+--- FLAGGED: South revenue -9.1% WoW ---
+  No active beliefs; asking LLM for hypotheses:
+    + [units] Unit volume is declining, driving the revenue drop.  (conf 0.5)
+    + [avg_price] Price cuts or mix shift lowered average selling price.  (conf 0.5)
+    + [distribution_points] Loss of store distribution reduced sales availability in South.  (conf 0.5)
+
+  Belief: "Unit volume is declining, driving the revenue drop."  (conf 0.50)
+    data checked [units]: wk1=31,275  wk2=31,131  wk3=28,231
+    revenue for context:  wk1=75,188.45  wk2=74,812.02  wk3=68,015.73
+    → REINFORCE  conf 0.50 → 0.65
+      reason: Units fell from 31,275 in week 1 to 28,231 in week 3 (about -9.7%), in line with the ~9.5% revenue drop. Avg price held at 2.84-2.85 and distribution was flat, so volume explains the decline. The drop coincides with the promo ending in week 3.
+
+  Belief: "Price cuts or mix shift lowered average selling price."  (conf 0.50)
+    data checked [avg_price]: wk1=2.84  wk2=2.83  wk3=2.85
+    revenue for context:  wk1=75,188.45  wk2=74,812.02  wk3=68,015.73
+    → SUPERSEDE  old conf 0.50 → superseded
+      new belief: [units] "Promo ending in week 3 cut units and revenue."  (conf 0.60)
+      reason: Avg price was flat (2.84, 2.83, 2.85), so price or mix did not drive the week 3 revenue drop of about 9.1%. Units fell from 31,131 to 28,231 (about -9.3%) as promo_active turned off, which explains the decline.
+
+  Belief: "Loss of store distribution reduced sales availability in South."  (conf 0.50)
+    data checked [distribution_points]: wk1=951  wk2=951  wk3=955
+    revenue for context:  wk1=75,188.45  wk2=74,812.02  wk3=68,015.73
+    → SUPERSEDE  old conf 0.50 → superseded
+      new belief: [promo_active] "Promo ending in week 3 reduced South unit sales and revenue."  (conf 0.60)
+      reason: Distribution points were flat to slightly up (951 -> 951 -> 955), so lost distribution does not explain the week 3 revenue drop (74.8k -> 68.0k). Units fell 9% (31,131 -> 28,231) at a stable price (~2.85) just as promo_active turned off, which points to the end of the promo.
+
+======================================================================
+WEEK 4
+======================================================================
+  East   revenue     57,234  (-2.0% WoW)
+  North  revenue     57,178  (-0.1% WoW)
+  South  revenue     59,672  (-12.3% WoW)
+  West   revenue     57,733  (+0.9% WoW)
+
+--- FLAGGED: South revenue -12.3% WoW ---
+  3 active belief(s) in memory; testing against new data.
+
+  Belief: "Unit volume is declining, driving the revenue drop."  (conf 0.65)
+    data checked [units]: wk1=31,275  wk2=31,131  wk3=28,231  wk4=24,736
+    revenue for context:  wk1=75,188.45  wk2=74,812.02  wk3=68,015.73  wk4=59,672.26
+    → REINFORCE  conf 0.65 → 0.80
+      reason: Units fell from 31,275 in week 1 to 24,736 in week 4 (about -21%), closely matching the revenue drop from 75,188 to 59,672 (about -20.6%). Avg price stayed flat at 2.83-2.85, so volume explains the decline.
+
+  Belief: "Promo ending in week 3 cut units and revenue."  (conf 0.60)
+    data checked [units]: wk1=31,275  wk2=31,131  wk3=28,231  wk4=24,736
+    revenue for context:  wk1=75,188.45  wk2=74,812.02  wk3=68,015.73  wk4=59,672.26
+    → REINFORCE  conf 0.60 → 0.75
+      reason: Units fell from 31,131 to 28,231 (-9.3%) in week 3 when promo_active turned off, then to 24,736 (-12.4%) in week 4 with the promo still off. Price was flat (2.83 to 2.85), so the revenue drop (74.8k to 59.7k) tracks the unit decline. Week 4 distribution also dropped (955 to 904), which may add to the fall but does not refute the promo effect.
+
+  Belief: "Promo ending in week 3 reduced South unit sales and revenue."  (conf 0.60)
+    data checked [promo_active]: wk1=yes  wk2=yes  wk3=no  wk4=no
+    revenue for context:  wk1=75,188.45  wk2=74,812.02  wk3=68,015.73  wk4=59,672.26
+    → REINFORCE  conf 0.60 → 0.75
+      reason: Promo turned off in week 3 and stayed off in week 4. Units fell 9% in week 3 (31,131 -> 28,231) and another 12% in week 4 (24,736), with revenue down from 74.8k to 59.7k at a stable price (~2.85). Distribution dropped to 904 in week 4, which may explain part of the further decline, but the week 3 drop coincided with the promo ending while distribution was flat.
+
+======================================================================
+WEEK 5
+======================================================================
+  East   revenue     57,773  (+0.9% WoW)
+  North  revenue     57,645  (+0.8% WoW)
+  South  revenue     54,989  (-7.8% WoW)
+  West   revenue     57,761  (+0.0% WoW)
+
+--- FLAGGED: South revenue -7.8% WoW ---
+  3 active belief(s) in memory; testing against new data.
+
+  Belief: "Unit volume is declining, driving the revenue drop."  (conf 0.80)
+    data checked [units]: wk1=31,275  wk2=31,131  wk3=28,231  wk4=24,736  wk5=22,760
+    revenue for context:  wk1=75,188.45  wk2=74,812.02  wk3=68,015.73  wk4=59,672.26  wk5=54,989.12
+    → REINFORCE  conf 0.80 → 0.95
+      reason: Units fell from 31,275 in week 1 to 22,760 in week 5 (about -27%), closely matching the revenue drop from 75,188 to 54,989 (about -27%). Avg price stayed flat at 2.83-2.85 and distribution held near 950, so volume explains the decline.
+
+  Belief: "Promo ending in week 3 cut units and revenue."  (conf 0.75)
+    data checked [units]: wk1=31,275  wk2=31,131  wk3=28,231  wk4=24,736  wk5=22,760
+    revenue for context:  wk1=75,188.45  wk2=74,812.02  wk3=68,015.73  wk4=59,672.26  wk5=54,989.12
+    → REINFORCE  conf 0.75 → 0.90
+      reason: Units fell from 31,131 in week 2 to 28,231 in week 3 when the promo ended, then to 24,736 and 22,760 in weeks 4 and 5 with the promo still off. Price was flat (about 2.83-2.85) and distribution recovered to 948 in week 5 while units kept falling, so the sustained decline (revenue 74.8k to 55.0k) is consistent with the promo ending.
+
+  Belief: "Promo ending in week 3 reduced South unit sales and revenue."  (conf 0.75)
+    data checked [promo_active]: wk1=yes  wk2=yes  wk3=no  wk4=no  wk5=no
+    revenue for context:  wk1=75,188.45  wk2=74,812.02  wk3=68,015.73  wk4=59,672.26  wk5=54,989.12
+    → REINFORCE  conf 0.75 → 0.90
+      reason: Promo was active in weeks 1-2 and off from week 3; revenue fell from 74.8k (wk 2) to 68.0k, 59.7k and 55.0k, and units fell from 31,131 to 22,760 at a flat price (~2.84). Distribution recovered to 948 in week 5 while units kept falling, so the decline is not explained by distribution and is consistent with the promo ending.
+
+======================================================================
+WEEK 6
+======================================================================
+  East   revenue     57,086  (-1.2% WoW)
+  North  revenue     57,698  (+0.1% WoW)
+  South  revenue     51,328  (-6.7% WoW)
+  West   revenue     58,127  (+0.6% WoW)
+
+--- FLAGGED: South revenue -6.7% WoW ---
+  3 active belief(s) in memory; testing against new data.
+
+  Belief: "Unit volume is declining, driving the revenue drop."  (conf 0.95)
+    data checked [units]: wk1=31,275  wk2=31,131  wk3=28,231  wk4=24,736  wk5=22,760  wk6=21,339
+    revenue for context:  wk1=75,188.45  wk2=74,812.02  wk3=68,015.73  wk4=59,672.26  wk5=54,989.12  wk6=51,327.5
+    → REINFORCE  conf 0.95 → 0.99
+      reason: Units fell from 31,275 in week 1 to 21,339 in week 6 (about -32%), closely matching the revenue drop from 75,188 to 51,328 (about -31.7%). Avg price held at 2.83-2.85 and distribution stayed near 950, so volume explains the decline.
+
+  Belief: "Promo ending in week 3 cut units and revenue."  (conf 0.90)
+    data checked [units]: wk1=31,275  wk2=31,131  wk3=28,231  wk4=24,736  wk5=22,760  wk6=21,339
+    revenue for context:  wk1=75,188.45  wk2=74,812.02  wk3=68,015.73  wk4=59,672.26  wk5=54,989.12  wk6=51,327.5
+    → REINFORCE  conf 0.90 → 0.99
+      reason: Units fell again to 21,339 in week 6 (from 31,131 in week 2, about -31%) with the promo still off. Price was flat (2.83) and distribution held at 949, so revenue (74.8k to 51.3k) tracks the unit decline after the promo ended.
+
+  Belief: "Promo ending in week 3 reduced South unit sales and revenue."  (conf 0.90)
+    data checked [promo_active]: wk1=yes  wk2=yes  wk3=no  wk4=no  wk5=no  wk6=no
+    revenue for context:  wk1=75,188.45  wk2=74,812.02  wk3=68,015.73  wk4=59,672.26  wk5=54,989.12  wk6=51,327.5
+    → REINFORCE  conf 0.90 → 0.99
+      reason: promo_active was true in weeks 1-2 and false in weeks 3-6, and revenue fell from 74.8k (wk 2) to 51.3k (wk 6) while units fell from 31,131 to 21,339 at a flat price (~2.83). Distribution is back to 949 (from 951), so it does not explain the continued decline, which is consistent with the promo ending.
+
+======================================================================
+FINAL BELIEFS
+======================================================================
+  South  active       0.99  [units] Unit volume is declining, driving the revenue drop.
+  South  superseded   0.10  [avg_price] Price cuts or mix shift lowered average selling price.
+  South  superseded   0.10  [distribution_points] Loss of store distribution reduced sales availability in South.
+  South  active       0.99  [units] Promo ending in week 3 cut units and revenue.
+  South  active       0.99  [promo_active] Promo ending in week 3 reduced South unit sales and revenue.
+
+found_true_cause: True
+score: 65.0  {'true_cause_found': 35, 'timeliness': 25.0, 'no_wrong_active': 0, 'no_non_causal': 0, 'no_duplicates': 5}
+Saved log to runs/run_20261011_205941.txt and summary to runs collection.

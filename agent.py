@@ -15,14 +15,11 @@ from memory import (
     supersede,
 )
 from playbook import get_active_playbook, guard, params, rules_text
+from scenarios import TRUE_CAUSE_MIN_CONFIDENCE, active_scenario
 
 # Confidence of a belief created by SUPERSEDE. Belief-update parameters live in the playbook.
 SUPERSEDE_CONFIDENCE = 0.6
 
-# The cause planted in generate_data.py, used to score a run.
-TRUE_CAUSE_REGION = "West"
-TRUE_CAUSE_METRIC = "distribution_points"
-TRUE_CAUSE_MIN_CONFIDENCE = 0.7
 
 HYPOTHESIS_SYSTEM = """You are a sales analyst. A region's revenue is falling.
 Propose 2-3 competing causal hypotheses. Each must name exactly one metric from the
@@ -220,8 +217,9 @@ def process_week(week, use_memory=True, verbose=True):
 
 
 def found_true_cause():
-    """True if an active West belief tests distribution_points with confidence >= 0.7."""
+    """True if an active belief on the scenario's true-cause region + metric has confidence >= 0.7."""
+    s = active_scenario()
     return any(
-        b["metric"] == TRUE_CAUSE_METRIC and b["confidence"] >= TRUE_CAUSE_MIN_CONFIDENCE
-        for b in get_beliefs(region=TRUE_CAUSE_REGION, status=ACTIVE)
+        b["metric"] == s["true_cause_metric"] and b["confidence"] >= TRUE_CAUSE_MIN_CONFIDENCE
+        for b in get_beliefs(region=s["true_cause_region"], status=ACTIVE)
     )
