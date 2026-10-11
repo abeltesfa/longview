@@ -120,12 +120,15 @@ def contradict(belief_id, week, evidence_summary, penalty=0.4):
     return new_conf
 
 
-def supersede(old_id, new_claim, confidence, week, reason):
-    """Replace a belief with a new one (same region/metric) and link them. Returns the new id."""
+def supersede(old_id, new_claim, confidence, week, reason, metric=None):
+    """Replace a belief with a new one and link them. Returns the new id.
+
+    The new belief keeps the old region; it keeps the old metric unless `metric` is given.
+    """
     old = _get(old_id)
     if old["status"] == SUPERSEDED:
         raise ValueError("Belief is already superseded")
-    new_id = create_belief(old["region"], old["metric"], new_claim, confidence, week, reason,
+    new_id = create_belief(old["region"], metric or old["metric"], new_claim, confidence, week, reason,
                            supersedes=old["_id"])
     _beliefs().update_one(
         {"_id": old["_id"]},
