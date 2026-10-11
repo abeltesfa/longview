@@ -34,6 +34,15 @@ SCENARIOS = {
         "true_cause_metric": "avg_price",
         "cause_first_week": 3,
     },
+    "D": {
+        "name": "D",
+        "description": "North: a one-week promo (week 1) ends in week 2, so revenue dips (misleading first "
+                       "guess). Distribution falls ~10% in week 3 and again in week 4, then stays down (true "
+                       "cause). Price flat.",
+        "true_cause_region": "North",
+        "true_cause_metric": "distribution_points",
+        "cause_first_week": 3,
+    },
 }
 DEFAULT_SCENARIO = "A"
 TRUE_CAUSE_MIN_CONFIDENCE = 0.7

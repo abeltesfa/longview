@@ -117,9 +117,9 @@ v0 usually *does* find the cause; it loses points for clutter. It tests symptoms
 
 ---
 
-## Generalization (held-out scenarios B and C)
+## Generalization (held-out scenarios B, C and D)
 
-Playbooks were learned and tuned on scenario A only. To check whether they carry over, `evaluate.py` runs them frozen (no reflection) on **scenarios B and C**, which they never saw, in a separate database (`longview_holdout`).
+Playbooks were learned and tuned on scenario A only. To check whether they carry over, `evaluate.py` runs them frozen (no reflection) on **scenarios B, C and D**, which they never saw, in a separate database (`longview_holdout`). (v11 was later trained on C. D is fresh for every version.)
 
 | Version | Author | Scenario B mean | Scenario C mean | found_true_cause (B + C) |
 |---|---|---:|---:|---:|
@@ -127,7 +127,7 @@ Playbooks were learned and tuned on scenario A only. To check whether they carry
 | v2 | human | 100.0 | **91.7** | 4/4 |
 | v10 | agent | 100.0 | 87.5 | 4/4 |
 
-**On the held-out scenarios, the agent-written v10 did no better than the human v2, and slightly worse on C.**
+**On B and C, the agent-written v10 did no better than the human v2, and slightly worse on C. On D, the hardest test, every playbook mostly failed; v11, the version trained on C, was the only one that found the cause, in 1 of 2 runs.**
 
 ### Scenario B: promo ends
 
@@ -190,12 +190,39 @@ Its diagnosis matches what I found in the logs by hand: it had reinforced distri
 - **Only part of the Raindrop evidence arrived.** The reflector received 3 of the run's 8 events, probably because the rest hadn't been processed yet when it queried.
 - **v11 exists only in `longview_holdout`.** It isn't in the demo database's playbook collection, and the demo still uses the main database's versions.
 
+### Scenario D: fresh held-out test, misleading promo then distribution loss
+
+**Scenario D:** North runs a one-week promo in week 1. It ends in week 2 and revenue dips −13%, which is the misleading first guess. Distribution then falls about 10% in week 3 and again in week 4 (955 → 859 → 763) and stays down. **True cause: `distribution_points`.** Price is flat. North is flagged only in weeks 2–4 (−13%, −11%, −10%). Revenue holds steady after that, so a playbook must switch to distribution *and* confirm it by week 4. This shape kept the test under 50 LLM calls; it's also a strict test of speed.
+
+| Version | Author | Mean score | Runs | found_true_cause |
+|---|---|---:|---|---:|
+| v0 | human (blank) | 7.5 | 10.0, 5.0 | 0/2 |
+| v10 | agent | 35.0 | 40.0, 30.0 | 0/2 |
+| v11 | agent (v10 + lessons from C) | **70.0** | 40.0, 100.0 | **1/2** |
+
+*44 LLM calls (budget 50). Output: `notes/holdout_scenario_d.txt`.*
+
+**What happened (from the run logs):**
+
+| Run | Switched to distribution | End state |
+|---|---|---|
+| v10 #1 | week 4 | distribution active at 0.60, never confirmed (no later flagged week) |
+| v10 #2 | never | **promo belief active at 0.99** (wrong) |
+| v11 #1 | week 4 | distribution at 0.60, never confirmed |
+| v11 #2 | **week 3** | reinforced to 0.75 in week 4 → found |
+| v0 #1, #2 | week 4 | distribution at 0.60, plus wrong beliefs (units, promo) left active at 0.90–0.95 |
+
+- **The same failure as scenario C, now costly.** Every playbook kept the promo explanation through week 3, because the promo was still "off" compared with week 1, even though distribution had started falling. In C, switching late only cost timeliness. In D the decline stops after week 4, so a week-4 switch never gets confirmed and scores as not found.
+- **v11's lesson from C partly carried over.** In one run it applied its new "check every lever each week" rule and switched in week 3. In the other it didn't. One success in two runs isn't a reliable improvement.
+- **v10 once ended fully wrong:** it kept the promo belief at 0.99.
+- **Scoring is strict here.** Four of the six runs did end with the correct distribution belief active, but only at 0.60. The score requires 0.7 or more, which needs a confirming week that D doesn't provide.
+
 ### Caveats
-- **Small sample:** 2 runs per version per held-out scenario; v10's 4.2-point gap on C comes from a single run.
-- **Hand-designed scenarios:** both were written by me. B turned out to be easy (no misleading guess backed by a moving metric). C was harder and separated the playbooks.
+- **Small sample:** 2 runs per version per held-out scenario; v10's 4.2-point gap on C comes from a single run, and v11's result on D is one success in two runs.
+- **Hand-designed scenarios:** all three were written by me. B turned out to be easy (no misleading guess backed by a moving metric). C and D, where a plausible first guess stays partly true, separated the playbooks. D in particular shows that no playbook here reliably drops a first guess that is still partly supported.
 - **Configured cause week:** each scenario records the week its cause first appears (`cause_first_week`), and timeliness uses that. It's configured rather than detected because avg_price carries about ±1% noise every week.
 
-Run it with `python evaluate.py --scenario B` or `--scenario C`. It writes only to `longview_holdout` and refuses to run against `longview`.
+Run it with `python evaluate.py --scenario B|C|D` (add `--max-calls N` to cap LLM calls). It writes only to `longview_holdout` and refuses to run against `longview`.
 
 ---
 

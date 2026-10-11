@@ -18,6 +18,11 @@ Scenario C (--scenario C), a second held-out test:
 - East avg_price rises ~9% from week 3 and stays up; customers drift away over the following
   weeks, so revenue keeps falling after distribution recovers (true cause: avg_price).
 - No promo. All other regions are stable.
+
+Scenario D (--scenario D), a third held-out test:
+- North runs a one-week promo in week 1; it ends in week 2 and revenue dips (misleading first guess).
+- North distribution falls ~10% in week 3 and again in week 4, then stays down (true cause).
+- Price flat. All other regions are stable.
 """
 import argparse
 import random
@@ -57,6 +62,11 @@ EAST_PRICE_RISE = 1.09
 EAST_PRICE_RISE_START = 3
 EAST_DEMAND = {1: 1.0, 2: 1.0, 3: 0.85, 4: 0.68, 5: 0.61, 6: 0.55}  # customers drift away after the rise
 
+# Scenario D (North). One-week promo in week 1; distribution steps down in weeks 3 and 4, then holds.
+NORTH_PROMO_WEEKS = {1}
+NORTH_PROMO_LIFT = 1.15
+NORTH_DIST = {1: 1.0, 2: 1.0, 3: 0.90, 4: 0.81, 5: 0.81, 6: 0.81}
+
 
 def generate(rng, scenario="A"):
     rows = []
@@ -76,6 +86,13 @@ def generate(rng, scenario="A"):
                     units_per_store = base_units_per_store * rng.uniform(0.985, 1.015) * EAST_DEMAND[week]
                     price_now = price * (EAST_PRICE_RISE if week >= EAST_PRICE_RISE_START else 1)
                     rows.append(_row(week, region, product, dist, units_per_store, price_now, False, rng))
+                    continue
+                if scenario == "D" and region == "North":
+                    dist = round(base_dist * rng.uniform(0.99, 1.01) * NORTH_DIST[week])
+                    promo = week in NORTH_PROMO_WEEKS
+                    units_per_store = (base_units_per_store * rng.uniform(0.985, 1.015)
+                                       * (NORTH_PROMO_LIFT if promo else 1))
+                    rows.append(_row(week, region, product, dist, units_per_store, price, promo, rng))
                     continue
                 if region == "West" and scenario == "A":
                     weeks_of_decline = max(0, week - WEST_DIST_DROP_START + 1)

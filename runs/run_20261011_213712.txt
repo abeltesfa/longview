@@ -1,0 +1,129 @@
+Run started 2026-10-11 21:37:12 UTC, playbook v0 (human)
+Memory reset.
+
+======================================================================
+WEEK 2
+======================================================================
+  East   revenue     57,220  (-1.6% WoW)
+  North  revenue     57,666  (-13.2% WoW)
+  South  revenue     57,549  (-0.5% WoW)
+  West   revenue     57,535  (-2.4% WoW)
+
+--- FLAGGED: North revenue -13.2% WoW ---
+  No active beliefs; asking LLM for hypotheses:
+    + [units] Lower unit volume is driving the revenue decline.  (conf 0.5)
+    + [avg_price] Price cuts or unfavorable mix reduced average selling price.  (conf 0.5)
+    + [distribution_points] Lost store or shelf distribution reduced sales reach.  (conf 0.5)
+
+  Belief: "Lower unit volume is driving the revenue decline."  (conf 0.50)
+    data checked [units]: wk1=27,426  wk2=24,042
+    revenue for context:  wk1=66,419.51  wk2=57,665.6
+    → REINFORCE  conf 0.50 → 0.65
+      reason: Units fell from 27,426 to 24,042 (-12.3%), nearly matching the 13.2% revenue drop, while avg price barely changed (2.85 to 2.82, -1.1%). The volume decline explains most of the revenue loss.
+
+  Belief: "Price cuts or unfavorable mix reduced average selling price."  (conf 0.50)
+    data checked [avg_price]: wk1=2.85  wk2=2.82
+    revenue for context:  wk1=66,419.51  wk2=57,665.6
+    → SUPERSEDE  old conf 0.50 → superseded
+      new belief: [units] "Promo ending reduced unit volume, driving the revenue decline."  (conf 0.60)
+      reason: Avg price barely moved (2.85 to 2.82, about -1%), so price/mix does not explain the 13% revenue drop (66.4k to 57.7k). Units fell about 12% (27,426 to 24,042) as the promo ended, which points to loss of promo volume as the driver.
+
+  Belief: "Lost store or shelf distribution reduced sales reach."  (conf 0.50)
+    data checked [distribution_points]: wk1=955  wk2=949
+    revenue for context:  wk1=66,419.51  wk2=57,665.6
+    → SUPERSEDE  old conf 0.50 → superseded
+      new belief: [promo_active] "Promotion ending in week 2 reduced unit demand and revenue."  (conf 0.60)
+      reason: Distribution points barely moved (955 to 949, -0.6%), which cannot explain a 13% revenue drop. Promo ended in week 2 while units fell 12% (27426 to 24042) and price slipped slightly, pointing to loss of promo lift.
+
+======================================================================
+WEEK 3
+======================================================================
+  East   revenue     58,418  (+2.1% WoW)
+  North  revenue     51,476  (-10.7% WoW)
+  South  revenue     58,133  (+1.0% WoW)
+  West   revenue     57,201  (-0.6% WoW)
+
+--- FLAGGED: North revenue -10.7% WoW ---
+  3 active belief(s) in memory; testing against new data.
+
+  Belief: "Lower unit volume is driving the revenue decline."  (conf 0.65)
+    data checked [units]: wk1=27,426  wk2=24,042  wk3=21,529
+    revenue for context:  wk1=66,419.51  wk2=57,665.6  wk3=51,475.88
+    → REINFORCE  conf 0.65 → 0.80
+      reason: Units fell again from 24,042 to 21,529 (-10.5%), and are down 21.5% since week 1, against a 22.5% revenue drop (66,420 to 51,476). Avg price barely moved (2.85 to 2.81, -1.4%), so volume explains nearly all of the decline.
+
+  Belief: "Promo ending reduced unit volume, driving the revenue decline."  (conf 0.60)
+    data checked [units]: wk1=27,426  wk2=24,042  wk3=21,529
+    revenue for context:  wk1=66,419.51  wk2=57,665.6  wk3=51,475.88
+    → REINFORCE  conf 0.60 → 0.75
+      reason: Units fell from 27,426 to 24,042 to 21,529 (about -21% overall) after promo_active went false in week 2, tracking revenue (66.4k to 51.5k) while avg_price stayed flat (2.85 to 2.81). Distribution dropped in week 3 (949 to 859), which may add to the week 3 decline, but the promo-end volume loss still explains most of the drop.
+
+  Belief: "Promotion ending in week 2 reduced unit demand and revenue."  (conf 0.60)
+    data checked [promo_active]: wk1=yes  wk2=no  wk3=no
+    revenue for context:  wk1=66,419.51  wk2=57,665.6  wk3=51,475.88
+    → REINFORCE  conf 0.60 → 0.75
+      reason: Promo_active went true to false in week 2, and units fell 12% in week 2 (27426 to 24042) and another 10% in week 3 (to 21529), with revenue down 13% and then 11%. Price was nearly flat (2.85 to 2.81), so the decline is consistent with lost promo lift. The week 3 distribution drop (949 to 859) may be adding to the decline, but the promo-end timing still fits.
+
+======================================================================
+WEEK 4
+======================================================================
+  East   revenue     57,234  (-2.0% WoW)
+  North  revenue     46,249  (-10.2% WoW)
+  South  revenue     58,198  (+0.1% WoW)
+  West   revenue     57,733  (+0.9% WoW)
+
+--- FLAGGED: North revenue -10.2% WoW ---
+  3 active belief(s) in memory; testing against new data.
+
+  Belief: "Lower unit volume is driving the revenue decline."  (conf 0.80)
+    data checked [units]: wk1=27,426  wk2=24,042  wk3=21,529  wk4=19,212
+    revenue for context:  wk1=66,419.51  wk2=57,665.6  wk3=51,475.88  wk4=46,248.63
+    → REINFORCE  conf 0.80 → 0.95
+      reason: Units fell again from 21,529 to 19,212 (-10.8%) and are down 29.9% since week 1, against a 30.4% revenue drop (66,420 to 46,249). Avg price is essentially flat (2.85 to 2.83), so volume explains nearly all of the decline.
+
+  Belief: "Promo ending reduced unit volume, driving the revenue decline."  (conf 0.75)
+    data checked [units]: wk1=27,426  wk2=24,042  wk3=21,529  wk4=19,212
+    revenue for context:  wk1=66,419.51  wk2=57,665.6  wk3=51,475.88  wk4=46,248.63
+    → REINFORCE  conf 0.75 → 0.90
+      reason: Units fell from 27,426 to 19,212 (about -30%) after promo_active went false in week 2, tracking revenue (66.4k to 46.2k, about -30%) while avg_price stayed flat (2.85 to 2.83). Distribution also dropped (955 to 763), so it may be contributing to the later declines, but units tracking revenue supports the claim.
+
+  Belief: "Promotion ending in week 2 reduced unit demand and revenue."  (conf 0.75)
+    data checked [promo_active]: wk1=yes  wk2=no  wk3=no  wk4=no
+    revenue for context:  wk1=66,419.51  wk2=57,665.6  wk3=51,475.88  wk4=46,248.63
+    → SUPERSEDE  old conf 0.75 → superseded
+      new belief: [distribution_points] "Shrinking distribution points are driving the ongoing unit and revenue decline."  (conf 0.60)
+      reason: Promo ended in week 2 but units kept falling 10% each week (24042 to 21529 to 19212) after the initial step-down, which a one-time loss of promo lift doesn't explain. Distribution points fell 949 to 859 to 763 (-20% since week 1), tracking the continued unit and revenue decline while price stayed flat (~2.82).
+
+======================================================================
+WEEK 5
+======================================================================
+  East   revenue     57,773  (+0.9% WoW)
+  North  revenue     46,634  (+0.8% WoW)
+  South  revenue     57,278  (-1.6% WoW)
+  West   revenue     57,761  (+0.0% WoW)
+
+  No regions flagged.
+
+======================================================================
+WEEK 6
+======================================================================
+  East   revenue     57,086  (-1.2% WoW)
+  North  revenue     46,654  (+0.0% WoW)
+  South  revenue     57,028  (-0.4% WoW)
+  West   revenue     58,127  (+0.6% WoW)
+
+  No regions flagged.
+
+======================================================================
+FINAL BELIEFS
+======================================================================
+  North  active       0.95  [units] Lower unit volume is driving the revenue decline.
+  North  superseded   0.10  [avg_price] Price cuts or unfavorable mix reduced average selling price.
+  North  superseded   0.10  [distribution_points] Lost store or shelf distribution reduced sales reach.
+  North  active       0.90  [units] Promo ending reduced unit volume, driving the revenue decline.
+  North  superseded   0.35  [promo_active] Promotion ending in week 2 reduced unit demand and revenue.
+  North  active       0.60  [distribution_points] Shrinking distribution points are driving the ongoing unit and revenue decline.
+
+found_true_cause: False
+score: 5.0  {'true_cause_found': 0, 'timeliness': 0.0, 'no_wrong_active': 0, 'no_non_causal': 0, 'no_duplicates': 5}
+Saved log to runs/run_20261011_213712.txt and summary to runs collection.
