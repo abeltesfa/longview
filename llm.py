@@ -12,6 +12,12 @@ MODEL = os.environ.get("LLM_MODEL", "claude-sonnet-5-5")
 
 _client = None
 
+# Running totals, so callers can report how many calls a run made.
+stats = {"calls": 0, "input_tokens": 0, "output_tokens": 0}
+
+# Where per-call usage lines go; replace (e.g. with a no-op) to change how they appear.
+usage_log = print
+
 
 def _get_client():
     global _client
@@ -35,7 +41,10 @@ def _call(system, user):
         fallbacks="default",
     )
     u = response.usage
-    print(f"    [llm {response.model}] tokens in={u.input_tokens} out={u.output_tokens}")
+    stats["calls"] += 1
+    stats["input_tokens"] += u.input_tokens
+    stats["output_tokens"] += u.output_tokens
+    usage_log(f"    [llm {response.model}] tokens in={u.input_tokens} out={u.output_tokens}")
     if response.stop_reason == "refusal":
         raise RuntimeError("LLM declined the request")
     return "".join(b.text for b in response.content if b.type == "text")
@@ -62,6 +71,6 @@ def ask_json(system, user):
     try:
         return _parse(text)
     except json.JSONDecodeError:
-        print("    [llm] response was not valid JSON, retrying once")
+        usage_log("    [llm] response was not valid JSON, retrying once")
         text = _call(system, f"{user}\n\nYour previous reply was not valid JSON. {JSON_RULE}")
         return _parse(text)

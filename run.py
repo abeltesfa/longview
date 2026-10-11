@@ -10,15 +10,12 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-from agent import process_week
+from agent import found_true_cause, process_week
 from db import get_db
-from memory import ACTIVE, get_beliefs, reset_memory
+from memory import get_beliefs, reset_memory
 from playbook import get_active_playbook
 
 RUNS_DIR = Path(__file__).parent / "runs"
-TRUE_CAUSE_REGION = "West"
-TRUE_CAUSE_METRIC = "distribution_points"
-TRUE_CAUSE_MIN_CONFIDENCE = 0.7
 
 
 class Tee:
@@ -36,7 +33,7 @@ class Tee:
             s.flush()
 
 
-def summarize(started_at, playbook_version, weeks):
+def build_run_summary(started_at, playbook_version, weeks):
     beliefs = get_beliefs()
     final_beliefs = {}
     for b in beliefs:
@@ -46,17 +43,12 @@ def summarize(started_at, playbook_version, weeks):
             "status": b["status"],
             "confidence": b["confidence"],
         })
-    found = any(
-        b["region"] == TRUE_CAUSE_REGION and b["status"] == ACTIVE
-        and b["metric"] == TRUE_CAUSE_METRIC and b["confidence"] >= TRUE_CAUSE_MIN_CONFIDENCE
-        for b in beliefs
-    )
     return {
         "timestamp": started_at,
         "playbook_version": playbook_version,
         "weeks_processed": weeks,
         "final_beliefs": final_beliefs,
-        "found_true_cause": found,
+        "found_true_cause": found_true_cause(),
     }
 
 
@@ -77,7 +69,7 @@ def main():
             for week in weeks:
                 process_week(week)
 
-            summary = summarize(started_at, playbook["version"], weeks)
+            summary = build_run_summary(started_at, playbook["version"], weeks)
             get_db()["runs"].insert_one(dict(summary))
 
             print(f"\n{'=' * 70}\nFINAL BELIEFS\n{'=' * 70}")

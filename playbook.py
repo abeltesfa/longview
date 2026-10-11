@@ -10,6 +10,10 @@ from db import get_db
 DEFAULT_RULES = [
     "Hypotheses must name a driver metric that could cause the revenue change, "
     "never revenue or units themselves.",
+    "Judge a belief by whether its driver metric is still off its week-1 baseline in the direction "
+    "that explains lower revenue. Replace or contradict it only once its own metric no longer "
+    "supports it (for example, the driver has returned to baseline while revenue stays down).",
+    "Never create a belief that duplicates another active belief's metric for the same region.",
 ]
 DEFAULT_CAUSAL_METRICS = ["avg_price", "distribution_points", "promo_active"]
 
