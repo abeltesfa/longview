@@ -7,7 +7,7 @@ import json
 import re
 
 from llm import ask_json
-from playbook import GUARDRAILS, revise_playbook
+from playbook import DEFAULT_PARAMETERS, GUARDRAILS, PARAMETER_RANGES, clamp_parameters, params, revise_playbook
 
 REGIONS_PATTERN = re.compile(r"\b(North|South|East|West)\b", re.I)
 MAX_RULES = 6
@@ -17,6 +17,13 @@ GUARDRAIL_DOCS = {
                            "(avg_price, distribution_points, promo_active).",
     "no_duplicate_metric_beliefs": "Code refuses to create a belief when another active belief in the "
                                    "same region already tests that metric.",
+}
+
+PARAMETER_DOCS = {
+    "initial_confidence": "confidence given to each newly proposed hypothesis",
+    "reinforce_boost": "confidence added when evidence supports a belief",
+    "contradict_penalty": "confidence removed when evidence contradicts a belief",
+    "drop_threshold": "a region is investigated when weekly revenue falls by more than this fraction",
 }
 
 SCORING_DOCS = """Runs are scored 0-100 from stored beliefs and data:
@@ -29,7 +36,9 @@ SCORING_DOCS = """Runs are scored 0-100 from stored beliefs and data:
 SYSTEM = f"""You improve the playbook of a sales-analysis agent. Each week the agent flags regions
 whose revenue fell, proposes causal hypotheses (beliefs), and tests each against one metric,
 deciding REINFORCE / CONTRADICT / SUPERSEDE / NO_CHANGE. The playbook's rules are injected into
-those prompts; guardrails are code-enforced switches.
+those prompts; guardrails are code-enforced switches; parameters are the numbers code uses to
+update confidence and flag regions (rules cannot change these numbers, only parameters can).
+Parameter values outside their allowed range are clamped.
 
 {SCORING_DOCS}
 
@@ -39,7 +48,9 @@ week, or the answer you suspect. Prefer few, sharp rules (at most {MAX_RULES}). 
 
 Return: {{"diagnosis": "2-3 sentences",
  "rules": [{{"text": "...", "change": "kept|added|edited|removed", "justification": "one line"}}],
- "guardrails": {{"<name>": {{"on": true/false, "justification": "one line"}}}}}}"""
+ "guardrails": {{"<name>": {{"on": true/false, "justification": "one line"}}}},
+ "parameters": {{"<name>": {{"value": number, "justification": "one line"}}}}}}
+Include only the parameters you want to change."""
 
 
 def _compact_beliefs(run_doc):
@@ -63,6 +74,8 @@ def reflect(run_doc, playbook, rejected=None):
             "rules": playbook["rules"],
             "guardrails": {g: {"on": playbook["guardrails"].get(g, False), "what_it_does": GUARDRAIL_DOCS[g]}
                            for g in GUARDRAILS},
+            "parameters": {n: {"value": v, "allowed_range": PARAMETER_RANGES[n], "what_it_does": PARAMETER_DOCS[n]}
+                           for n, v in params(playbook).items()},
         },
         "score": run_doc["score"],
         "score_breakdown": {k: v for k, v in run_doc["score_breakdown"].items()},
@@ -100,6 +113,16 @@ def reflect(run_doc, playbook, rejected=None):
         if new != old:
             changes.append(f"guardrail {g}: {'off → on' if new else 'on → off'} ({spec.get('justification', '')})")
 
+    old_params = params(playbook)
+    proposed = {n: spec.get("value") for n, spec in (proposal.get("parameters") or {}).items()
+                if n in DEFAULT_PARAMETERS and isinstance(spec, dict)}
+    new_params = clamp_parameters({**old_params, **proposed})
+    for n, new in new_params.items():
+        if new != old_params[n]:
+            why = proposal["parameters"][n].get("justification", "")
+            clamped = " (clamped)" if proposed.get(n) != new else ""
+            changes.append(f"parameter {n}: {old_params[n]} → {new}{clamped} ({why})")
+
     version = revise_playbook(rules, guardrails, author="agent", parent_version=playbook["version"],
-                              changes=changes, note=proposal.get("diagnosis", ""))
+                              changes=changes, note=proposal.get("diagnosis", ""), parameters=new_params)
     return version, {"diagnosis": proposal.get("diagnosis", ""), "changes": changes}

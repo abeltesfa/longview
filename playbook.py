@@ -4,6 +4,9 @@ Exactly one document in the `playbook` collection is active at a time. Every rev
 new version; older versions are kept. Each version records its author ("human" or "agent"),
 and agent-written versions record the parent_version they were derived from.
 
+Parameters are the numeric knobs of belief updating, clamped to PARAMETER_RANGES so an
+agent-written version cannot break the system.
+
 Guardrails are code-enforced checks that only apply when their flag is on:
 - causal_metrics_only: hypotheses (and replacement beliefs) may only test causal_metrics.
 - no_duplicate_metric_beliefs: never hold two active beliefs on the same region + metric.
@@ -14,6 +17,21 @@ from db import get_db
 
 CAUSAL_METRICS = ["avg_price", "distribution_points", "promo_active"]
 GUARDRAILS = ["causal_metrics_only", "no_duplicate_metric_beliefs"]
+
+DEFAULT_PARAMETERS = {
+    "initial_confidence": 0.5,   # confidence of a newly proposed hypothesis
+    "reinforce_boost": 0.15,     # confidence added on supporting evidence
+    "contradict_penalty": 0.4,   # confidence removed on contradicting evidence
+    "drop_threshold": 0.05,      # flag a region when revenue falls more than this share week over week
+}
+# Ranges keep self-edits safe. initial_confidence stays below the 0.7 "confident" bar, so
+# confidence above it always has to be earned with evidence.
+PARAMETER_RANGES = {
+    "initial_confidence": (0.3, 0.65),
+    "reinforce_boost": (0.05, 0.3),
+    "contradict_penalty": (0.1, 0.6),
+    "drop_threshold": (0.02, 0.10),
+}
 
 RULE_DRIVER_METRIC = ("Hypotheses must name a driver metric that could cause the revenue change, "
                       "never revenue or units themselves.")
@@ -42,17 +60,18 @@ def _playbook():
 
 
 def ensure_seed_versions():
-    """Make sure the human versions exist and carry author/guardrail fields."""
+    """Make sure the human versions exist and carry author/guardrail/parameter fields."""
     for version, spec in HUMAN_VERSIONS.items():
         existing = _playbook().find_one({"version": version})
         if existing is None:
             _playbook().insert_one({
                 "version": version, "active": False, "author": "human", "parent_version": None,
                 "rules": spec["rules"], "causal_metrics": CAUSAL_METRICS, "guardrails": spec["guardrails"],
-                "note": spec["note"], "changes": [], "created_at": datetime.now(timezone.utc),
+                "parameters": dict(DEFAULT_PARAMETERS), "note": spec["note"], "changes": [], "created_at": datetime.now(timezone.utc),
             })
         else:
             fill = {k: v for k, v in {"author": "human", "guardrails": spec["guardrails"],
+                                      "parameters": dict(DEFAULT_PARAMETERS),
                                       "parent_version": None, "changes": []}.items() if k not in existing}
             if fill:
                 _playbook().update_one({"_id": existing["_id"]}, {"$set": fill})
@@ -81,7 +100,26 @@ def set_active_version(version):
     _playbook().update_one({"version": version}, {"$set": {"active": True}})
 
 
-def revise_playbook(rules, guardrails, author, parent_version=None, changes=None, note="", activate=False):
+def clamp_parameters(values):
+    """Return a full parameter dict: defaults overridden by `values`, each clamped to its range."""
+    out = {}
+    for name, default in DEFAULT_PARAMETERS.items():
+        lo, hi = PARAMETER_RANGES[name]
+        try:
+            v = float(values.get(name, default))
+        except (TypeError, ValueError):
+            v = default
+        out[name] = round(min(hi, max(lo, v)), 3)
+    return out
+
+
+def params(playbook):
+    """The playbook's parameters (versions saved before parameters existed get the defaults)."""
+    return clamp_parameters(playbook.get("parameters") or {})
+
+
+def revise_playbook(rules, guardrails, author, parent_version=None, changes=None, note="", activate=False,
+                    parameters=None):
     """Insert a new playbook version and return its number."""
     latest = _playbook().find_one(sort=[("version", -1)])
     version = (latest["version"] + 1) if latest else 0
@@ -93,6 +131,7 @@ def revise_playbook(rules, guardrails, author, parent_version=None, changes=None
         "rules": list(rules),
         "causal_metrics": CAUSAL_METRICS,
         "guardrails": {g: bool(guardrails.get(g, False)) for g in GUARDRAILS},
+        "parameters": clamp_parameters(parameters or {}),
         "changes": list(changes or []),
         "note": note,
         "created_at": datetime.now(timezone.utc),
@@ -104,6 +143,22 @@ def revise_playbook(rules, guardrails, author, parent_version=None, changes=None
 
 def guard(playbook, name):
     return bool(playbook.get("guardrails", {}).get(name, False))
+
+
+def version_scores():
+    """{version: latest scored run doc} from the runs collection."""
+    latest = {}
+    for r in get_db()["runs"].find({"score": {"$exists": True}}).sort("timestamp", 1):
+        latest[r["playbook_version"]] = r
+    return latest
+
+
+def best_agent_version():
+    """Highest-scoring agent-written version (newest wins ties), or None."""
+    scores = version_scores()
+    agent_versions = [p["version"] for p in _playbook().find({"author": "agent"})]
+    scored = [(scores[v]["score"], v) for v in agent_versions if v in scores]
+    return max(scored)[1] if scored else None
 
 
 def rules_text(playbook):

@@ -14,10 +14,9 @@ from memory import (
     reinforce,
     supersede,
 )
-from playbook import get_active_playbook, guard, rules_text
+from playbook import get_active_playbook, guard, params, rules_text
 
-DROP_THRESHOLD = -5.0  # % week-over-week revenue change that triggers investigation
-NEW_HYPOTHESIS_CONFIDENCE = 0.5
+# Confidence of a belief created by SUPERSEDE. Belief-update parameters live in the playbook.
 SUPERSEDE_CONFIDENCE = 0.6
 
 # The cause planted in generate_data.py, used to score a run.
@@ -97,9 +96,10 @@ def _propose_hypotheses(region, week, playbook, say, events):
         if guard(playbook, "no_duplicate_metric_beliefs") and h["metric"] in _active_metrics(region):
             say(f"    skipped duplicate hypothesis on {h['metric']}: {h.get('claim')}")
             continue
-        create_belief(region, h["metric"], h["claim"], NEW_HYPOTHESIS_CONFIDENCE, week,
+        initial = params(playbook)["initial_confidence"]
+        create_belief(region, h["metric"], h["claim"], initial, week,
                       reason=h.get("rationale", "initial hypothesis"))
-        say(f"    + [{h['metric']}] {h['claim']}  (conf {NEW_HYPOTHESIS_CONFIDENCE})")
+        say(f"    + [{h['metric']}] {h['claim']}  (conf {initial})")
         events.append({"type": "hypothesis", "region": region, "metric": h["metric"], "claim": h["claim"]})
 
 
@@ -128,6 +128,7 @@ def _evaluate(belief, week, interventions, use_memory, playbook, say, events):
         "available_metrics": allowed,
     }))
 
+    p = params(playbook)
     action = str(decision.get("action", "NO_CHANGE")).upper()
     reason = decision.get("reason", "")
     old_conf = belief["confidence"]
@@ -136,10 +137,10 @@ def _evaluate(belief, week, interventions, use_memory, playbook, say, events):
              "series": series, "action": action, "reason": reason, "old_confidence": old_conf}
 
     if action == "REINFORCE":
-        event["new_confidence"] = reinforce(bid, week, reason)
+        event["new_confidence"] = reinforce(bid, week, reason, boost=p["reinforce_boost"])
         say(f"    → REINFORCE  conf {old_conf:.2f} → {event['new_confidence']:.2f}")
     elif action == "CONTRADICT":
-        event["new_confidence"] = contradict(bid, week, reason)
+        event["new_confidence"] = contradict(bid, week, reason, penalty=p["contradict_penalty"])
         say(f"    → CONTRADICT  conf {old_conf:.2f} → {event['new_confidence']:.2f}")
     elif action == "SUPERSEDE" and decision.get("new_claim"):
         new_metric = decision.get("new_metric")
@@ -148,13 +149,14 @@ def _evaluate(belief, week, interventions, use_memory, playbook, say, events):
         if (guard(playbook, "no_duplicate_metric_beliefs")
                 and (new_metric or metric) in _active_metrics(region, exclude_id=bid)):
             # Another active belief already covers that driver: retire this one instead of duplicating.
-            event.update(action="CONTRADICT", new_confidence=contradict(bid, week, reason))
+            event.update(action="CONTRADICT",
+                         new_confidence=contradict(bid, week, reason, penalty=p["contradict_penalty"]))
             say(f"    → CONTRADICT (replacement already covered by an active belief)  "
                 f"conf {old_conf:.2f} → {event['new_confidence']:.2f}")
             say(f"      reason: {reason}")
             events.append(event)
             return
-        event["new_confidence"] = contradict(bid, week, reason)
+        event["new_confidence"] = contradict(bid, week, reason, penalty=p["contradict_penalty"])
         new = get_belief(supersede(bid, decision["new_claim"], SUPERSEDE_CONFIDENCE, week, reason,
                                    metric=new_metric))
         event.update(new_claim=new["claim"], new_metric=new["metric"])
@@ -187,7 +189,8 @@ def process_week(week, use_memory=True, verbose=True):
 
     _record_promos(week, say, events)
 
-    flagged = [s for s in summary if s["pct_change"] is not None and s["pct_change"] < DROP_THRESHOLD]
+    threshold_pct = -100 * params(playbook)["drop_threshold"]
+    flagged = [s for s in summary if s["pct_change"] is not None and s["pct_change"] < threshold_pct]
     if not flagged:
         say("\n  No regions flagged.")
         return events

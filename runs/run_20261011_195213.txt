@@ -1,0 +1,170 @@
+Run started 2026-10-11 19:52:13 UTC, playbook v0 (human)
+Memory reset.
+
+======================================================================
+WEEK 2
+======================================================================
+  East   revenue     57,220  (-1.6% WoW)
+  North  revenue     57,666  (-0.2% WoW)
+  South  revenue     57,549  (-0.5% WoW)
+  West   revenue     53,244  (-8.1% WoW)
+
+--- FLAGGED: West revenue -8.1% WoW ---
+  No active beliefs; asking LLM for hypotheses:
+    + [units] Volume decline: fewer units are being sold in the West region, for example from weaker demand or lost customers, which is driving the revenue drop even though pricing is unchanged.  (conf 0.5)
+    + [avg_price] Price erosion: the average selling price dropped, through discounting, a shift to lower-priced products, or competitive price pressure, reducing revenue per unit even if volume held.  (conf 0.5)
+    + [distribution_points] Reduced availability: the West region lost distribution points, such as stores or retail accounts carrying the product, which limited sales opportunities and reduced revenue.  (conf 0.5)
+
+  Belief: "Volume decline: fewer units are being sold in the West region, for example from weaker demand or lost customers, which is driving the revenue drop even though pricing is unchanged."  (conf 0.50)
+    data checked [units]: wk1=24,027  wk2=20,636
+    revenue for context:  wk1=57,959.81  wk2=53,244.08
+    → REINFORCE  conf 0.50 → 0.65
+      reason: Units fell from 24,027 to 20,636 (-14.1%), a larger drop than revenue (-8.1%), so volume is the driver of the revenue decline. Note that avg_price rose from 2.82 to 3.06 (+8.5%), so the claim that pricing is unchanged is not accurate, but the price increase partly offset the volume loss rather than causing the drop.
+
+  Belief: "Price erosion: the average selling price dropped, through discounting, a shift to lower-priced products, or competitive price pressure, reducing revenue per unit even if volume held."  (conf 0.50)
+    data checked [avg_price]: wk1=2.82  wk2=3.06
+    revenue for context:  wk1=57,959.81  wk2=53,244.08
+    → SUPERSEDE  old conf 0.50 → superseded
+      new belief: [units] "Volume decline: units sold fell about 14% week over week with flat distribution and no promotion, so weaker consumer demand or velocity drove the revenue drop, partly offset by a higher average price."  (conf 0.60)
+      reason: Average price rose from 2.82 to 3.06 (about +8.5%), which refutes price erosion. Revenue fell about 8.1% (57,960 to 53,244) while units dropped about 14.1% (24,027 to 20,636) with distribution flat at 950 and no promo, so the decline is volume-driven.
+
+  Belief: "Reduced availability: the West region lost distribution points, such as stores or retail accounts carrying the product, which limited sales opportunities and reduced revenue."  (conf 0.50)
+    data checked [distribution_points]: wk1=950  wk2=950
+    revenue for context:  wk1=57,959.81  wk2=53,244.08
+    → SUPERSEDE  old conf 0.50 → superseded
+      new belief: [avg_price] "Higher average price in the West (2.82 to 3.06) reduced unit demand, with the unit decline outweighing the price gain and lowering revenue."  (conf 0.60)
+      reason: Distribution points were flat at 950 in both weeks, so the claim of lost availability is refuted. Revenue fell about 8.1% (57,960 to 53,244) as units dropped about 14.1% (24,027 to 20,636) while avg price rose about 8.5% (2.82 to 3.06), pointing to price-driven demand loss.
+
+======================================================================
+WEEK 3
+======================================================================
+  East   revenue     58,418  (+2.1% WoW)
+  North  revenue     57,240  (-0.7% WoW)
+  South  revenue     58,133  (+1.0% WoW)
+  West   revenue     45,335  (-14.9% WoW)
+
+--- FLAGGED: West revenue -14.9% WoW ---
+  3 active belief(s) in memory; testing against new data.
+
+  Belief: "Volume decline: fewer units are being sold in the West region, for example from weaker demand or lost customers, which is driving the revenue drop even though pricing is unchanged."  (conf 0.65)
+    data checked [units]: wk1=24,027  wk2=20,636  wk3=17,418
+    revenue for context:  wk1=57,959.81  wk2=53,244.08  wk3=45,335.46
+    → REINFORCE  conf 0.65 → 0.80
+      reason: Units fell again from 20,636 to 17,418 (-15.6%), and have dropped 27.5% since week 1, outpacing the revenue decline (-21.8%). Price was flat at 3.06 in week 3, so it did not drive the drop, and no promo was active. The distribution drop from 950 to 807 points may partly explain the lost volume, but the claim of a volume decline is supported.
+
+  Belief: "Volume decline: units sold fell about 14% week over week with flat distribution and no promotion, so weaker consumer demand or velocity drove the revenue drop, partly offset by a higher average price."  (conf 0.60)
+    data checked [units]: wk1=24,027  wk2=20,636  wk3=17,418
+    revenue for context:  wk1=57,959.81  wk2=53,244.08  wk3=45,335.46
+    → SUPERSEDE  old conf 0.60 → superseded
+      new belief: [distribution_points] "Loss of distribution is driving the volume decline: distribution points fell from 950 to 807 (about -15%) in week 3, in line with the roughly 15.6% drop in units, with no promo and price flat at 3.06."  (conf 0.60)
+      reason: Units kept falling (20,636 to 17,418, about -15.6%), but distribution points dropped from 950 to 807 (about -15%) in week 3, matching the unit decline almost exactly. The claim of 'flat distribution' no longer holds, so lost store/shelf coverage is a better explanation than weaker consumer demand.
+
+  Belief: "Higher average price in the West (2.82 to 3.06) reduced unit demand, with the unit decline outweighing the price gain and lowering revenue."  (conf 0.60)
+    data checked [avg_price]: wk1=2.82  wk2=3.06  wk3=3.06
+    revenue for context:  wk1=57,959.81  wk2=53,244.08  wk3=45,335.46
+    → SUPERSEDE  old conf 0.60 → superseded
+      new belief: [distribution_points] "Loss of distribution points in the West (950 to 807 in week 3) reduced availability and drove the further unit and revenue decline, beyond the initial price increase effect."  (conf 0.60)
+      reason: Price was flat from week 2 to 3 (3.06 to 3.06), yet units fell another 15.6% (20,636 to 17,418) and revenue fell 14.9%, so price does not explain the week 3 drop. Distribution points fell from 950 to 807 (-15%), closely matching the unit decline.
+
+======================================================================
+WEEK 4
+======================================================================
+  East   revenue     57,234  (-2.0% WoW)
+  North  revenue     57,178  (-0.1% WoW)
+  South  revenue     58,198  (+0.1% WoW)
+  West   revenue     42,552  (-6.1% WoW)
+  intervention recorded: West promo in week 4
+
+--- FLAGGED: West revenue -6.1% WoW ---
+  3 active belief(s) in memory; testing against new data.
+
+  Belief: "Volume decline: fewer units are being sold in the West region, for example from weaker demand or lost customers, which is driving the revenue drop even though pricing is unchanged."  (conf 0.80)
+    data checked [units]: wk1=24,027  wk2=20,636  wk3=17,418  wk4=17,616
+    revenue for context:  wk1=57,959.81  wk2=53,244.08  wk3=45,335.46  wk4=42,551.52
+    → REINFORCE  conf 0.80 → 0.95
+      reason: Units are down 26.7% since week 1 (24,027 to 17,616), with a small week 4 uptick (17,418 to 17,616, +1.1%) despite a promo. Revenue fell a further 6.1% in week 4 as price dropped to 2.85, so the volume decline persists. Distribution has fallen from 950 to 687 points, which is consistent with lost volume.
+
+  Belief: "Loss of distribution is driving the volume decline: distribution points fell from 950 to 807 (about -15%) in week 3, in line with the roughly 15.6% drop in units, with no promo and price flat at 3.06."  (conf 0.60)
+    data checked [distribution_points]: wk1=950  wk2=950  wk3=807  wk4=687
+    revenue for context:  wk1=57,959.81  wk2=53,244.08  wk3=45,335.46  wk4=42,551.52
+    → NO_CHANGE
+      reason: Distribution kept falling (807 to 687, about -15%) in week 4, yet units were flat to slightly up (17,418 to 17,616) with a promo active and price down to 2.85. The promo likely offset the coverage loss, so the distribution link can't be cleanly confirmed or refuted from this week's data.
+
+  Belief: "Loss of distribution points in the West (950 to 807 in week 3) reduced availability and drove the further unit and revenue decline, beyond the initial price increase effect."  (conf 0.60)
+    data checked [distribution_points]: wk1=950  wk2=950  wk3=807  wk4=687
+    revenue for context:  wk1=57,959.81  wk2=53,244.08  wk3=45,335.46  wk4=42,551.52
+    → REINFORCE  conf 0.60 → 0.75
+      reason: Distribution points kept falling (950 to 807 to 687, -28% overall) and revenue fell again to 42,551 in week 4. Units held flat (17,418 to 17,616) despite the further distribution loss, but a promo and a price cut to 2.85 in week 4 plausibly offset it, so the availability claim still holds.
+
+======================================================================
+WEEK 5
+======================================================================
+  East   revenue     57,773  (+0.9% WoW)
+  North  revenue     57,645  (+0.8% WoW)
+  South  revenue     57,278  (-1.6% WoW)
+  West   revenue     35,903  (-15.6% WoW)
+
+--- FLAGGED: West revenue -15.6% WoW ---
+  3 active belief(s) in memory; testing against new data.
+
+  Belief: "Volume decline: fewer units are being sold in the West region, for example from weaker demand or lost customers, which is driving the revenue drop even though pricing is unchanged."  (conf 0.95)
+    data checked [units]: wk1=24,027  wk2=20,636  wk3=17,418  wk4=17,616  wk5=14,964
+    revenue for context:  wk1=57,959.81  wk2=53,244.08  wk3=45,335.46  wk4=42,551.52  wk5=35,902.95
+    → REINFORCE  conf 0.95 → 0.99
+      reason: Units fell again from 17,616 to 14,964 (-15.1%) in week 5 and are down 37.7% since week 1 (24,027), with revenue down 38.1% over the same period. Price is roughly flat at 2.84 and no promo is active, so volume loss is driving the revenue decline.
+
+  Belief: "Loss of distribution is driving the volume decline: distribution points fell from 950 to 807 (about -15%) in week 3, in line with the roughly 15.6% drop in units, with no promo and price flat at 3.06."  (conf 0.60)
+    data checked [distribution_points]: wk1=950  wk2=950  wk3=807  wk4=687  wk5=584
+    revenue for context:  wk1=57,959.81  wk2=53,244.08  wk3=45,335.46  wk4=42,551.52  wk5=35,902.95
+    → REINFORCE  conf 0.60 → 0.75
+      reason: Distribution points kept falling (950 to 807 to 687 to 584, about -39% from week 1), and units fell alongside (24,027 to 14,964, about -38%). Week 4's promo gave only a brief unit uptick (17,418 to 17,616) despite the continued distribution loss, which is consistent with the claim.
+
+  Belief: "Loss of distribution points in the West (950 to 807 in week 3) reduced availability and drove the further unit and revenue decline, beyond the initial price increase effect."  (conf 0.75)
+    data checked [distribution_points]: wk1=950  wk2=950  wk3=807  wk4=687  wk5=584
+    revenue for context:  wk1=57,959.81  wk2=53,244.08  wk3=45,335.46  wk4=42,551.52  wk5=35,902.95
+    → REINFORCE  conf 0.75 → 0.90
+      reason: Distribution points fell every week after week 2 (950 to 584, -38%) while units fell from 20,636 to 14,964 and revenue from 53,244 to 35,903. In week 5 the promo ended and price stayed near 2.84, yet units dropped 15% alongside a further 15% distribution loss, which fits the availability claim.
+
+======================================================================
+WEEK 6
+======================================================================
+  East   revenue     57,086  (-1.2% WoW)
+  North  revenue     57,698  (+0.1% WoW)
+  South  revenue     57,028  (-0.4% WoW)
+  West   revenue     30,119  (-16.1% WoW)
+
+--- FLAGGED: West revenue -16.1% WoW ---
+  3 active belief(s) in memory; testing against new data.
+
+  Belief: "Volume decline: fewer units are being sold in the West region, for example from weaker demand or lost customers, which is driving the revenue drop even though pricing is unchanged."  (conf 0.99)
+    data checked [units]: wk1=24,027  wk2=20,636  wk3=17,418  wk4=17,616  wk5=14,964  wk6=12,536
+    revenue for context:  wk1=57,959.81  wk2=53,244.08  wk3=45,335.46  wk4=42,551.52  wk5=35,902.95  wk6=30,118.76
+    → REINFORCE  conf 0.99 → 0.99
+      reason: Units fell again from 14,964 to 12,536 (-16.2%) in week 6 and are down 47.8% since week 1 (24,027), with revenue down 48.0% (57,959.81 to 30,118.76). Price is flat at 2.82 with no promo, so the revenue drop is driven by volume loss.
+
+  Belief: "Loss of distribution is driving the volume decline: distribution points fell from 950 to 807 (about -15%) in week 3, in line with the roughly 15.6% drop in units, with no promo and price flat at 3.06."  (conf 0.75)
+    data checked [distribution_points]: wk1=950  wk2=950  wk3=807  wk4=687  wk5=584  wk6=497
+    revenue for context:  wk1=57,959.81  wk2=53,244.08  wk3=45,335.46  wk4=42,551.52  wk5=35,902.95  wk6=30,118.76
+    → REINFORCE  conf 0.75 → 0.90
+      reason: Distribution points kept falling (950 to 497, about -48%) and units fell in step (24,027 to 12,536, about -48%). Week 4's promo gave only a small unit bump (17,418 to 17,616) despite the continued coverage loss, which fits distribution being the main constraint.
+
+  Belief: "Loss of distribution points in the West (950 to 807 in week 3) reduced availability and drove the further unit and revenue decline, beyond the initial price increase effect."  (conf 0.90)
+    data checked [distribution_points]: wk1=950  wk2=950  wk3=807  wk4=687  wk5=584  wk6=497
+    revenue for context:  wk1=57,959.81  wk2=53,244.08  wk3=45,335.46  wk4=42,551.52  wk5=35,902.95  wk6=30,118.76
+    → REINFORCE  conf 0.90 → 0.99
+      reason: Distribution points fell again from 584 to 497 (-15%) in week 6, with price flat at about 2.82 and no promo, while units dropped 16% (14,964 to 12,536) and revenue fell 16%. Since week 2, distribution is down 48% and units down 39%, which fits the availability claim.
+
+======================================================================
+FINAL BELIEFS
+======================================================================
+  West   active       0.99  [units] Volume decline: fewer units are being sold in the West region, for example from weaker demand or lost customers, which is driving the revenue drop even though pricing is unchanged.
+  West   superseded   0.10  [avg_price] Price erosion: the average selling price dropped, through discounting, a shift to lower-priced products, or competitive price pressure, reducing revenue per unit even if volume held.
+  West   superseded   0.10  [distribution_points] Reduced availability: the West region lost distribution points, such as stores or retail accounts carrying the product, which limited sales opportunities and reduced revenue.
+  West   superseded   0.20  [units] Volume decline: units sold fell about 14% week over week with flat distribution and no promotion, so weaker consumer demand or velocity drove the revenue drop, partly offset by a higher average price.
+  West   superseded   0.20  [avg_price] Higher average price in the West (2.82 to 3.06) reduced unit demand, with the unit decline outweighing the price gain and lowering revenue.
+  West   active       0.90  [distribution_points] Loss of distribution is driving the volume decline: distribution points fell from 950 to 807 (about -15%) in week 3, in line with the roughly 15.6% drop in units, with no promo and price flat at 3.06.
+  West   active       0.99  [distribution_points] Loss of distribution points in the West (950 to 807 in week 3) reduced availability and drove the further unit and revenue decline, beyond the initial price increase effect.
+
+found_true_cause: True
+score: 63.8  {'true_cause_found': 35, 'timeliness': 18.8, 'no_wrong_active': 10, 'no_non_causal': 0, 'no_duplicates': 0}
+Saved log to runs/run_20261011_195213.txt and summary to runs collection.

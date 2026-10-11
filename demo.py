@@ -1,7 +1,8 @@
 """Live demo: watch the agent's beliefs evolve week by week.
 
-Usage: python demo.py             # pause for Enter between weeks
+Usage: python demo.py                 # best-scoring agent playbook, pause between weeks
        python demo.py --no-pause
+       python demo.py --playbook 2      # run with a specific playbook version
 """
 import argparse
 
@@ -11,9 +12,9 @@ from rich.table import Table
 from rich.text import Text
 
 import llm
-from agent import DROP_THRESHOLD, found_true_cause, process_week
+from agent import found_true_cause, process_week
 from memory import get_beliefs, reset_memory
-from playbook import get_active_playbook
+from playbook import best_agent_version, get_active_playbook, params, set_active_version
 from summary import REGION, summarize
 
 WEEKS = range(2, 7)
@@ -28,14 +29,14 @@ def _series(points):
                      else f"wk{p['week']} {'Y' if p['value'] else 'n'}" for p in points)
 
 
-def render_revenue(summary):
+def render_revenue(summary, threshold_pct):
     table = Table(title="Revenue", title_justify="left", box=None, padding=(0, 2))
     table.add_column("Region")
     table.add_column("Revenue", justify="right")
     table.add_column("WoW", justify="right")
     for s in summary:
         pct = s["pct_change"]
-        flagged = pct is not None and pct < DROP_THRESHOLD
+        flagged = pct is not None and pct < threshold_pct
         table.add_row(s["region"], f"{s['revenue']:,.0f}",
                       Text(f"{pct:+.1f}%" if pct is not None else "n/a", style="bold red" if flagged else ""),
                       style="bold" if flagged else "dim")
@@ -96,13 +97,28 @@ def render_beliefs(week, previous):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--no-pause", action="store_true", help="run straight through without waiting for Enter")
+    parser.add_argument("--playbook", type=int, default=None,
+                        help="playbook version to use (default: best-scoring agent version)")
     args = parser.parse_args()
 
+    previous_active = get_active_playbook()["version"]
+    version = args.playbook if args.playbook is not None else best_agent_version()
+    if version is not None:
+        set_active_version(version)
+    try:
+        run_demo(args)
+    finally:
+        set_active_version(previous_active)
+
+
+def run_demo(args):
     llm.usage_log = lambda msg: None  # keep the demo output clean; totals are shown at the end
     playbook = get_active_playbook()
+    threshold_pct = -100 * params(playbook)["drop_threshold"]
     console.print(Panel.fit(
         f"[bold]Longview[/]: an analyst agent with memory\n"
-        f"[dim]Playbook v{playbook['version']} · {len(playbook['rules'])} rules · model {llm.MODEL}[/]",
+        f"[dim]Playbook v{playbook['version']} ({playbook.get('author', '?')}) · "
+        f"{len(playbook['rules'])} rules · model {llm.MODEL}[/]",
         border_style="blue"))
     reset_memory()
     console.print("[dim]Memory reset.[/]")
@@ -111,7 +127,7 @@ def main():
     for week in WEEKS:
         console.rule(f"[bold]Week {week}")
         events = process_week(week, verbose=False)
-        render_revenue(next(e["regions"] for e in events if e["type"] == "summary"))
+        render_revenue(next(e["regions"] for e in events if e["type"] == "summary"), threshold_pct)
         render_events(events)
         console.print()
         snapshot = render_beliefs(week, snapshot)

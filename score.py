@@ -2,8 +2,8 @@
 
 Points (max 100):
   35  true cause found (active West belief on distribution_points, confidence >= 0.7)
-  25  timeliness: full marks if that belief reached 0.7 in the first week the data showed the
-      cause (distribution first fell), losing an equal share for each week later
+  25  timeliness: full marks if that belief was reinforced to >= 0.7 in the first week the data
+      showed the cause (distribution first fell), losing an equal share for each week later
   20  minus 10 per wrong belief still active at the end
   10  minus 5 per belief on a non-causal metric (units or revenue)
   10  minus 5 per duplicate belief (created while another active belief had the same region + metric)
@@ -25,7 +25,8 @@ def _retired_week(belief):
 def _first_confident_week(beliefs):
     weeks = [h["week"] for b in beliefs
              if b["region"] == TRUE_CAUSE_REGION and b["metric"] == TRUE_CAUSE_METRIC
-             for h in b["history"] if h["new_confidence"] >= TRUE_CAUSE_MIN_CONFIDENCE]
+             for h in b["history"]
+             if h["action"] == "reinforced" and h["new_confidence"] >= TRUE_CAUSE_MIN_CONFIDENCE]
     return min(weeks) if weeks else None
 
 

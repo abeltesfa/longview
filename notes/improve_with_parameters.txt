@@ -1,0 +1,63 @@
+────────────────────────────────────────────────── Baseline: playbook v0 (no rules, guardrails off) ──────────────────────────────────────────────────
+  v0 scored 63.8  (found True, {'true_cause_found': 35, 'timeliness': 18.8, 'no_wrong_active': 10, 'no_non_causal': 0, 'no_duplicates': 0})  16 LLM 
+calls · runs/run_20261011_195213.txt
+───────────────────────────────────────────────────────────── Iteration 1: reflect on v0 ─────────────────────────────────────────────────────────────
+Diagnosis: The agent found the true driver (distribution_points) but only in week 3, then lost points because it also tested symptoms (units) and 
+created duplicate beliefs on the same region and metric. A wrong active belief (units) stayed at 0.99 confidence. Early beliefs were created in 
+parallel with the same weak evidence, wasting a cycle and delaying confidence in the driver.
+  • added rule: Only form hypotheses about causal drivers (avg_price, distribution_points, promo_active). Revenue and units are outcomes to be 
+explained, never the cause to be tested. (Units beliefs cost the non-causal points and stayed active at 0.99 as a wrong belief.)
+  • added rule: Before creating a belief, check for an existing active belief on the same region and metric; reinforce, edit, or supersede it instead 
+of creating another. (Two duplicate belief pairs were created, costing duplicate points.)
+  • added rule: When units fall, check whether a driver metric moved by a similar proportion in the same or prior week; a driver that moves together 
+with units and changes before or at the same time is the leading candidate. (The distribution drop matched the unit drop and was the true cause, but 
+was found one week late.)
+  • added rule: Do not reject a driver because its change was small or absent in only the first week; test whether it moved in the weeks immediately 
+before the revenue drop, and re-test rejected drivers when new weeks arrive. (Supports earlier detection of the driver as it begins to move.)
+  • added rule: When a hypothesis is replaced by a new one, the new one must test a different causal metric, not restate a symptom of the old one. 
+(Supersede chains produced symptom beliefs and redundant restatements.)
+  • guardrail causal_metrics_only: off → on (Prevents units/revenue beliefs, which cost points and became wrong active beliefs.)
+  • guardrail no_duplicate_metric_beliefs: off → on (Prevents duplicate beliefs on the same region and metric.)
+  • parameter initial_confidence: 0.5 → 0.55 (A slightly higher start lets a correct driver cross 0.7 sooner.)
+  • parameter reinforce_boost: 0.15 → 0.2 (Faster confidence build-up reaches 0.7 sooner when evidence supports the driver.)
+  • parameter drop_threshold: 0.05 → 0.03 (A lower threshold flags regions earlier, improving timeliness.)
+Saved as playbook v6 (author: agent, parent v0)
+  v6 scored 93.8  (found True, {'true_cause_found': 35, 'timeliness': 18.8, 'no_wrong_active': 20, 'no_non_causal': 10, 'no_duplicates': 10})  8 LLM 
+calls · runs/run_20261011_195258.txt
+✔ Accepted v6: score 63.8 → 93.8
+───────────────────────────────────────────────────────────── Iteration 2: reflect on v6 ─────────────────────────────────────────────────────────────
+Diagnosis: The run found the true driver (distribution_points) with no wrong active beliefs, non-causal beliefs, or duplicates. The only loss was 
+timeliness: the driver first moved in week 3 and confidence reached 0.7 in week 4. The agent also spent week 2 on a price hypothesis that was a 
+coincidence, and created three parallel hypotheses at once, which wasted effort.
+  • edited rule: When revenue falls, compare every driver's week-over-week change against the revenue change in the same week. A driver whose 
+proportional change matches the decline, and that continues to move as the decline continues, is the leading candidate. A driver that stops moving 
+while revenue keeps falling cannot be the explanation for the continued decline. (Merges the proportional-match and continuation tests so a 
+coincidental early mover is dropped quickly and the real driver is found sooner.)
+  • added rule: When a new driver shows a large change that matches the revenue drop in the same week, reinforce it decisively; sustained moves across
+consecutive weeks are strong evidence. (Speeds up confidence in the true driver.)
+  • parameter initial_confidence: 0.55 → 0.6 (A higher start lets a well-matched hypothesis reach 0.7 after one reinforcement, improving timeliness.)
+  • parameter reinforce_boost: 0.2 → 0.25 (Faster confidence gain once evidence supports the true driver.)
+Saved as playbook v7 (author: agent, parent v6)
+  v7 scored 93.8  (found True, {'true_cause_found': 35, 'timeliness': 18.8, 'no_wrong_active': 20, 'no_non_causal': 10, 'no_duplicates': 10})  8 LLM 
+calls · runs/run_20261011_195325.txt
+✔ Accepted v7: score 93.8 → 93.8
+───────────────────────────────────────────────────────────── Iteration 3: reflect on v7 ─────────────────────────────────────────────────────────────
+Diagnosis: The run scored 93.8 and found the true driver (distribution_points) with no wrong, non-causal or duplicate beliefs. The only loss was 
+timeliness: the driver first moved in week 3 and confidence reached 0.7 or higher in week 4, because the agent first over-credited a coincidental 
+price move and the correct belief started at 0.6 and needed a second reinforcement.
+  • edited rule: A single-week match between one driver and revenue is tentative, especially with only two weeks of data. Do not treat it as confirmed
+until the driver keeps moving in the following week. When a driver's move coincides with a revenue drop, reinforce it by an amount proportional to how
+well the size and timing match. (Avoids over-crediting early coincidences such as the price rise while still rewarding strong matches.)
+  • edited rule: Re-test every previously rejected driver each week, and when a driver first shows a large move, reinforce it decisively in that same 
+week. (Merges the re-test rule with the decisive-reinforcement rule to speed up confidence on the true driver.)
+  • parameter initial_confidence: 0.6 → 0.65 (A higher start lets the correct belief cross 0.7 sooner, after a single reinforcement.)
+  • parameter reinforce_boost: 0.25 → 0.3 (Faster confidence gain on a matching driver improves timeliness.)
+Saved as playbook v8 (author: agent, parent v7)
+  v8 scored 93.8  (found True, {'true_cause_found': 35, 'timeliness': 18.8, 'no_wrong_active': 20, 'no_non_causal': 10, 'no_duplicates': 10})  8 LLM 
+calls · runs/run_20261011_195349.txt
+✔ Accepted v8: score 93.8 → 93.8
+────────────────────────────────────────────────────────────────────── Results ───────────────────────────────────────────────────────────────────────
+
+[NOTE] Output ends here because a shell pipe (sed q) closed stdout while the results table was printing.
+All runs and versions were saved; run `python history.py` for the lineage and comparison tables.
+LLM calls in this improve run: 43 (16 + 8 + 8 + 8 in runs, 3 reflections).

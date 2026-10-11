@@ -12,7 +12,7 @@ from rich.console import Console
 from rich.table import Table
 
 import llm
-from playbook import GUARDRAILS, ensure_seed_versions, get_active_playbook, get_playbook, set_active_version
+from playbook import GUARDRAILS, ensure_seed_versions, params, get_active_playbook, get_playbook, set_active_version
 from reflect import reflect
 from run import execute_run
 
@@ -36,7 +36,8 @@ def run_version(version):
 def _playbook_cell(pb):
     rules = "\n".join(f"{i}. {r}" for i, r in enumerate(pb["rules"], 1)) or "(no rules)"
     guards = "\n".join(f"{'✔' if pb['guardrails'].get(g) else '✘'} {g}" for g in GUARDRAILS)
-    return f"{rules}\n\n[bold]Guardrails[/]\n{guards}"
+    knobs = "\n".join(f"{n} = {v}" for n, v in params(pb).items())
+    return f"{rules}\n\n[bold]Guardrails[/]\n{guards}\n\n[bold]Parameters[/]\n{knobs}"
 
 
 def main():
